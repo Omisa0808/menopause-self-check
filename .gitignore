@@ -1,0 +1,10 @@
+node_modules/
+threads-generator/
+gen_card.mjs
+package.json
+package-lock.json
+.claude/
+CLAUDE.md
+*.log
+.DS_Store
+Thumbs.db
