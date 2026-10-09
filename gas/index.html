@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ガス腹原因特定アプリ | おなかカンガルー</title>
+  <meta name="description" content="🦘ガス腹を卒業した健康オタク薬剤師・おなかカンガルー監修。あなたのガス腹の原因タイプ（5つ）と、張りやすいかもしれない食材がわかるセルフチェック。" />
+
+  <!-- OGP (LINEのリンクプレビュー用) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="🦘 ガス腹原因特定アプリ | おなかカンガルー" />
+  <meta property="og:description" content="あなたのガス腹はどのタイプ？ 5つのタイプと、張りやすいかもしれない食材がわかる。無料・5分・登録不要。" />
+  <meta property="og:image" content="../assets/kangaroo.png" />
+  <meta property="og:locale" content="ja_JP" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="🦘 ガス腹原因特定アプリ" />
+  <meta name="twitter:description" content="あなたのガス腹タイプがわかる。無料・5分。" />
+  <meta name="twitter:image" content="../assets/kangaroo.png" />
+  <meta name="theme-color" content="#5ed4b8" />
+
+  <link rel="icon" type="image/png" href="../assets/kangaroo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.10/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink:        #ff6fa5;
+      --pink-soft:   #ffe0ec;
+      --pink-deep:   #d63384;
+      --yellow:      #ffd93d;
+      --yellow-soft: #fff4c1;
+      --mint:        #5ed4b8;
+      --mint-soft:   #ccf7eb;
+      --mint-deep:   #047857;
+      --purple:      #a78bfa;
+      --orange:      #ff9d6c;
+      --sky:         #6cc5ff;
+      --cream:       #fffaf0;
+      --ink:         #2d2438;
+      --gray:        #6b6280;
+    }
+
+    body {
+      font-family: 'M PLUS Rounded 1c', -apple-system, 'Hiragino Maru Gothic ProN', 'Yu Gothic UI', sans-serif;
+      background:
+        radial-gradient(circle at 10% 5%,  #ccf7eb 0%, transparent 30%),
+        radial-gradient(circle at 90% 15%, #ffe0ec 0%, transparent 32%),
+        radial-gradient(circle at 80% 90%, #d4ecff 0%, transparent 28%),
+        radial-gradient(circle at 15% 85%, #fff4c1 0%, transparent 30%),
+        #fffaf0;
+      background-attachment: fixed;
+      min-height: 100vh;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 160px; }
+
+    .score-group { display: flex; gap: 6px; margin-top: 10px; }
+    .score-btn {
+      flex: 1;
+      padding: 11px 2px;
+      background: white;
+      border: 2.5px solid #e9e3f5;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 800;
+      text-align: center;
+      transition: transform 0.12s ease, box-shadow 0.12s, background 0.12s;
+      box-shadow: 0 3px 0 #e9e3f5;
+      color: var(--ink);
+    }
+    .score-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #e9e3f5; }
+    .score-btn.on { color: white; transform: translateY(2px); }
+
+    .prog-track { height: 10px; background: #f0e9fa; border-radius: 99px; overflow: hidden; border: 1.5px solid #e9e3f5; }
+    .prog-fill {
+      height: 100%; border-radius: 99px;
+      transition: width 0.4s cubic-bezier(.34,1.56,.64,1);
+      background: linear-gradient(90deg, var(--mint), var(--pink));
+    }
+
+    .rbar-track { height: 18px; background: #f0e9fa; border-radius: 99px; overflow: hidden; border: 2px solid #e9e3f5; }
+    .rbar-fill { height: 100%; border-radius: 99px; transition: width 0.7s cubic-bezier(.34,1.56,.64,1); }
+
+    .pop-card {
+      background: white;
+      border-radius: 22px;
+      border: 2.5px solid #f0e9fa;
+      box-shadow: 0 5px 0 #f0e9fa, 0 8px 22px rgba(167,139,250,0.10);
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+    .bottom-area {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to bottom, transparent 0%, rgba(255,250,240,0.96) 30%);
+      padding: 16px 16px 24px;
+      pointer-events: none;
+    }
+    .bottom-inner { max-width: 640px; margin: 0 auto; pointer-events: auto; }
+
+    .main-btn {
+      width: 100%;
+      padding: 18px 16px;
+      border: none;
+      border-radius: 99px;
+      color: white;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--mint) 0%, var(--pink) 100%);
+      box-shadow: 0 5px 0 #2f9c84, 0 8px 24px rgba(94,212,184,0.40);
+      letter-spacing: 0.02em;
+    }
+    .main-btn:disabled { opacity: 0.55; cursor: default; }
+    .main-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #2f9c84; }
+
+    .sub-btn {
+      width: 100%;
+      padding: 15px;
+      border: 2.5px solid #e9e3f5;
+      border-radius: 99px;
+      background: white;
+      color: var(--gray);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 0 #e9e3f5;
+    }
+
+    @keyframes twinkle { 0%, 100% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.1); } }
+    .twinkle { display:inline-block; animation: twinkle 2.4s infinite ease-in-out; }
+    .twinkle.d2 { animation-delay: 0.6s; }
+    .twinkle.d3 { animation-delay: 1.2s; }
+
+    @keyframes wobble { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+    .wobble { animation: wobble 3.5s infinite ease-in-out; transform-origin: center bottom; }
+
+    #loading {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; font-size: 14px; color: var(--gray); font-weight: 700;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">読み込み中... 🦘</div>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect } = React;
+
+    /* ------------------------------------------------------------------ */
+    /*  CONFIG                                                              */
+    /* ------------------------------------------------------------------ */
+    const ROOM_URL = 'https://www.notion.so/34a96187228b8054a0fdd9d3fe359a49?source=copy_link&utm_source=gas_app&utm_content=GAS';
+    const STORAGE_KEY = 'onaka_gas_check_v1';
+    const SHARE_TEXT = '🦘おなかカンガルー監修「ガス腹原因特定アプリ」やってみたよ！あなたのガス腹はどのタイプ？';
+
+    /* ------------------------------------------------------------------ */
+    /*  DATA                                                                */
+    /* ------------------------------------------------------------------ */
+    // パートA：体と暮らし（各タイプ5問）
+    const TYPES = [
+      {
+        id: 'air', emoji: '🫧', name: '空気ごっくんタイプ',
+        color: { primary:'#6cc5ff', light:'#d4ecff', deep:'#1e40af', soft:'#eff6ff' },
+        desc: '食べるときや緊張したときに飲み込んだ空気が、お腹にたまりやすいタイプ。',
+        todo: 'ひと口ごとに箸を置いてみて。炭酸を1杯、白湯に替えるのもおすすめ。',
+        items: [
+          { id:'A1', t:'早食いだと言われる' },
+          { id:'A2', t:'スマホやテレビを見ながら食べることが多い' },
+          { id:'A3', t:'炭酸水や炭酸飲料をよく飲む' },
+          { id:'A4', t:'ガムをよくかむ' },
+          { id:'A5', t:'鼻がつまりやすく、口で息をしがち' },
+        ],
+      },
+      {
+        id: 'ferment', emoji: '🫙', name: '腸内発酵しすぎタイプ', mine: true,
+        color: { primary:'#5ed4b8', light:'#ccf7eb', deep:'#047857', soft:'#ecfdf5' },
+        desc: '腸の中で、ガスを作りやすい住人が元気すぎるタイプ。体にいいはずの食べものでも、合わないと張ることがあるよ。腸の住人のバランスは、気分や肌、アレルギーとも関係があると言われているの。',
+        todo: '3日だけ「食べたもの」と「張った時間」をメモしてみて。自分の張りやすい食べものが見えてくるよ。',
+        items: [
+          { id:'B1', t:'おならのにおいがきつい日が多い' },
+          { id:'B2', t:'ヨーグルトを足したら、かえって張った' },
+          { id:'B3', t:'食物繊維を増やしたら、かえって張った' },
+          { id:'B4', t:'食後2〜3時間たってから張ってくる' },
+          { id:'B5', t:'お腹がゴロゴロ鳴ることが多い' },
+          { id:'B6', t:'気分の落ち込みや不安が続きやすい' },
+          { id:'B7', t:'花粉症、アトピー、ぜんそく、じんましんなどのアレルギーがある' },
+          { id:'B8', t:'肌荒れや吹き出物をくり返す' },
+          { id:'B9', t:'この1年で、抗生物質を何度か飲んだ' },
+          { id:'B10', t:'風邪をひきやすい、治りにくい' },
+        ],
+      },
+      {
+        id: 'jam', emoji: '🚧', name: '出口渋滞タイプ',
+        color: { primary:'#ff9d6c', light:'#ffe4d4', deep:'#c2410c', soft:'#fff7ed' },
+        desc: 'お通じが滞って、ガスの出口がふさがっているタイプ。夕方ほど張るのが目印。',
+        todo: '朝いちばんに白湯を1杯。食後に10分歩いてみて。',
+        items: [
+          { id:'C1', t:'2日以上お通じがない日がある' },
+          { id:'C2', t:'コロコロ・固い便が多い' },
+          { id:'C3', t:'1日の大半を座って過ごしている' },
+          { id:'C4', t:'朝より夕方の方が、お腹が張っている' },
+          { id:'C5', t:'水分をあまりとらない（1日コップ4杯より少ない）' },
+        ],
+      },
+      {
+        id: 'nerve', emoji: '⚡', name: '腸がビクビクタイプ',
+        color: { primary:'#a78bfa', light:'#ede9fe', deep:'#6d28d9', soft:'#f5f3ff' },
+        desc: '脳と腸はつながっていて、緊張やストレスにお腹が反応しやすいタイプ。',
+        todo: 'お腹に手をあてて、4秒吸って8秒吐くを3回。',
+        items: [
+          { id:'D1', t:'緊張すると、お腹がゆるくなる' },
+          { id:'D2', t:'緊張すると、お腹が痛くなる' },
+          { id:'D3', t:'仕事中や人前ほど、おならが気になる' },
+          { id:'D4', t:'休みの日は、お腹の調子がいい' },
+          { id:'D5', t:'お腹が心配で、外出や予定をためらうことがある' },
+        ],
+      },
+      {
+        id: 'hormone', emoji: '🌙', name: 'ホルモンゆらぎタイプ',
+        color: { primary:'#ff6fa5', light:'#ffe0ec', deep:'#d63384', soft:'#fff0f5' },
+        desc: '女性ホルモンの揺らぎが、腸の動きにも影響していると言われているタイプ。40代からは特に出やすいよ。',
+        todo: '体調と張りを、生理周期（またはその日の揺らぎ）と一緒にメモしてみて。',
+        items: [
+          { id:'E1', t:'生理前に、張りや便秘がひどくなる（生理がない人は「ない」）' },
+          { id:'E2', t:'40代になってから、ガスが増えた' },
+          { id:'E3', t:'40代になってから、便秘が増えた' },
+          { id:'E4', t:'ほてり、寝つきの悪さ、イライラもある' },
+          { id:'E5', t:'生理の周期が乱れてきた、または閉経の前後だ' },
+        ],
+      },
+    ];
+
+    const OPTS_A = [
+      { v:0, l:'ない' },
+      { v:1, l:'ときどき' },
+      { v:2, l:'よくある' },
+    ];
+
+    // パートB：食材チェック（グループ名は結果でだけ出す）
+    const FOOD_GROUPS = [
+      {
+        id: 'wheat', emoji: '🍞', name: '小麦・ねぎのグループ',
+        tip: 'パンや麺を毎食から1日1回にするなど、まずは量で調整してみて。',
+        items: [
+          { id:'F1', t:'パン' },
+          { id:'F2', t:'パスタ・うどん・ラーメン' },
+          { id:'F3', t:'玉ねぎ・長ねぎ' },
+          { id:'F4', t:'にんにく' },
+        ],
+      },
+      {
+        id: 'bean', emoji: '🫘', name: '豆のグループ',
+        tip: '少しの量から。豆の水煮は、さっと水で洗うとラクになる人もいるよ。',
+        items: [
+          { id:'F5', t:'大豆の煮豆・豆の水煮' },
+          { id:'F6', t:'豆乳' },
+        ],
+      },
+      {
+        id: 'milk', emoji: '🥛', name: '乳のグループ',
+        tip: '牛乳の糖（乳糖）を分けるのが苦手な人は、日本人に多いと言われているよ。量や種類を変えて試してみて。',
+        items: [
+          { id:'F7', t:'牛乳' },
+          { id:'F8', t:'ヨーグルト' },
+          { id:'F9', t:'アイスクリーム' },
+        ],
+      },
+      {
+        id: 'fruit', emoji: '🍎', name: 'くだもの・甘みのグループ',
+        tip: '果物の糖が多いもの。1回に食べる量を少なめにしてみて。',
+        items: [
+          { id:'F10', t:'りんご・梨' },
+          { id:'F11', t:'はちみつ' },
+          { id:'F12', t:'果汁100%ジュース' },
+        ],
+      },
+      {
+        id: 'sweetener', emoji: '🍬', name: '甘味料・きのこのグループ',
+        tip: 'ガムやのど飴は、袋の「キシリトール」「ソルビトール」などの表示を見てみて。',
+        items: [
+          { id:'F13', t:'ガム・のど飴（甘味料入り）' },
+          { id:'F14', t:'きのこ' },
+        ],
+      },
+      {
+        id: 'beer', emoji: '🍺', name: 'ビール・脂もののグループ',
+        tip: '炭酸と脂は、張りを長引かせやすいと言われているよ。量と、食べる時間（夜遅く）を見直してみて。',
+        items: [
+          { id:'F15', t:'ビール' },
+          { id:'F16', t:'揚げ物・脂っこい料理' },
+        ],
+      },
+    ];
+
+    const OPTS_B = [
+      { v:0,    l:'平気' },
+      { v:1,    l:'ときどき張る' },
+      { v:2,    l:'張る' },
+      { v:'na', l:'食べない' },
+    ];
+
+    const RED_FLAGS = [
+      '便に血が混じる、便が黒い',
+      'ダイエットしていないのに、体重が減ってきた',
+      '夜中に、お腹の痛みで目が覚める',
+      '熱が出る、吐く',
+      'ここ最近、急にお通じの様子が変わった（特に40代以降）',
+    ];
+
+    /* ------------------------------------------------------------------ */
+    /*  HELPERS                                                             */
+    /* ------------------------------------------------------------------ */
+    const allItemsA = TYPES.flatMap(t => t.items);
+    const allItemsB = FOOD_GROUPS.flatMap(g => g.items);
+
+    function typeScore(type, answers) {
+      return type.items.reduce((s, it) => s + (answers[it.id] ?? 0), 0);
+    }
+
+    // 食べている食材だけで平均をとる（食べないものは数えない）
+    function groupScore(group, answers) {
+      const eaten = group.items.filter(it => typeof answers[it.id] === 'number');
+      if (eaten.length === 0) return null;
+      return eaten.reduce((s, it) => s + answers[it.id], 0) / eaten.length;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  COMPONENTS                                                          */
+    /* ------------------------------------------------------------------ */
+    function Hero({ title, sub }) {
+      return (
+        <div style={{
+          background:'linear-gradient(135deg, #ccf7eb 0%, #fff4c1 55%, #ffe0ec 100%)',
+          borderRadius:28, padding:'22px 20px', marginBottom:16,
+          border:'3px solid white',
+          boxShadow:'0 6px 0 rgba(94,212,184,0.25), 0 12px 32px rgba(167,139,250,0.18)',
+          display:'flex', alignItems:'center', gap:14,
+          position:'relative', overflow:'hidden',
+        }}>
+          <span className="twinkle" style={{ position:'absolute', top:14, right:24, fontSize:18 }}>✨</span>
+          <span className="twinkle d2" style={{ position:'absolute', bottom:18, right:50, fontSize:14 }}>🫧</span>
+          <span className="twinkle d3" style={{ position:'absolute', top:34, right:90, fontSize:11 }}>⭐</span>
+          <img
+            src="../assets/kangaroo.png"
+            alt="おなかカンガルー"
+            className="wobble"
+            style={{ width:100, height:100, flexShrink:0, objectFit:'contain', filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.10))' }}
+          />
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{
+              display:'inline-block', fontSize:11, fontWeight:800, color:'white',
+              background:'var(--mint-deep)', padding:'3px 11px', borderRadius:99, marginBottom:7,
+            }}>
+              🦘 おなかカンガルー
+            </div>
+            <h1 style={{ fontSize:20, fontWeight:900, color:'var(--ink)', lineHeight:1.3, marginBottom:6 }}>{title}</h1>
+            <p style={{ fontSize:11.5, color:'var(--gray)', lineHeight:1.55, fontWeight:600 }}>{sub}</p>
+          </div>
+        </div>
+      );
+    }
+
+    function QuestionItem({ item, value, onSelect, color, idx, opts }) {
+      return (
+        <div style={{ padding:'14px 0', borderTop: idx === 0 ? 'none' : '2px dashed #f4f0fa' }}>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
+            <span style={{
+              flexShrink:0, width:24, height:24, borderRadius:'50%',
+              background: color.light, color: color.deep,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:11, fontWeight:900, marginTop:1,
+            }}>{idx + 1}</span>
+            <p style={{ fontSize:14.5, lineHeight:1.6, fontWeight:600 }}>{item.t}</p>
+          </div>
+          <div className="score-group">
+            {opts.map(o => (
+              <button
+                key={String(o.v)}
+                className={'score-btn' + (value === o.v ? ' on' : '')}
+                style={value === o.v ? {
+                  background: color.primary, borderColor: color.deep, boxShadow:`0 1px 0 ${color.deep}`,
+                } : {}}
+                onClick={() => onSelect(item.id, o.v)}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function QuestionCard({ label, emoji, items, answers, onSelect, color, opts }) {
+      const done = items.filter(it => answers[it.id] !== undefined).length;
+      return (
+        <div className="pop-card" style={{ borderColor: color.light, boxShadow:`0 5px 0 ${color.light}, 0 10px 26px rgba(0,0,0,0.06)` }}>
+          <div style={{
+            background:`linear-gradient(135deg, ${color.soft} 0%, ${color.light} 100%)`,
+            padding:'14px 18px', borderBottom:`2.5px dashed ${color.light}`,
+            display:'flex', justifyContent:'space-between', alignItems:'center',
+          }}>
+            <div style={{ fontSize:15, fontWeight:900, color: color.deep, display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:20 }}>{emoji}</span>{label}
+            </div>
+            <div style={{
+              background:'white', padding:'4px 12px', borderRadius:99,
+              border:`2px solid ${color.primary}`, fontSize:12, fontWeight:800, color: color.deep,
+            }}>{done}/{items.length}</div>
+          </div>
+          <div style={{ padding:'4px 18px 18px' }}>
+            {items.map((item, idx) => (
+              <QuestionItem key={item.id} item={item} idx={idx} value={answers[item.id]} onSelect={onSelect} color={color} opts={opts} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function RedFlagBox() {
+      return (
+        <div style={{
+          background:'#fff7ed', border:'2.5px solid #ff9d6c', borderRadius:18,
+          padding:'14px 16px', marginBottom:16, boxShadow:'0 3px 0 #ff9d6c66',
+        }}>
+          <div style={{ fontSize:13, fontWeight:900, color:'#c2410c', marginBottom:6 }}>⚠️ はじめに読んでね</div>
+          <div style={{ fontSize:12.5, lineHeight:1.7, fontWeight:600, marginBottom:6 }}>
+            このチェックは診断ではありません。次のどれかに当てはまる人は、先に消化器内科で相談してね。
+          </div>
+          <ul style={{ fontSize:12.5, lineHeight:1.8, fontWeight:600, paddingLeft:18, color:'#7c2d12' }}>
+            {RED_FLAGS.map(f => <li key={f}>{f}</li>)}
+          </ul>
+        </div>
+      );
+    }
+
+    function ProgressBar({ done, total, label }) {
+      return (
+        <div style={{
+          position:'sticky', top:8, zIndex:10, background:'white', borderRadius:18, padding:'12px 16px',
+          margin:'10px 0 14px', boxShadow:'0 4px 0 #f0e9fa, 0 8px 22px rgba(167,139,250,0.10)', border:'2.5px solid #f0e9fa',
+        }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <span style={{ fontSize:12, fontWeight:800 }}>🦘 {label}</span>
+            <span style={{ fontSize:12, fontWeight:900, color:'var(--mint-deep)', background:'var(--mint-soft)', padding:'3px 10px', borderRadius:99 }}>
+              {done} / {total} 問
+            </span>
+          </div>
+          <div className="prog-track"><div className="prog-fill" style={{ width:`${Math.round(done / total * 100)}%` }} /></div>
+        </div>
+      );
+    }
+
+    function Footer() {
+      return (
+        <div style={{ textAlign:'center', fontSize:10.5, color:'var(--gray)', lineHeight:1.7, fontWeight:600, padding:'14px 8px 8px' }}>
+          🦘 監修：おなかカンガルー（薬剤師）<br />
+          このチェックは医療診断ではありません。<br />
+          気になる症状は医療機関にご相談ください。
+        </div>
+      );
+    }
+
+    /* ---------------- 結果 ---------------- */
+    function ResultsView({ answers, onBack, onRestart }) {
+      // タイプごとに質問数が違うので、割合で比べる
+      const typeResults = TYPES.map(t => {
+        const score = typeScore(t, answers);
+        const max = t.items.length * 2;
+        return { ...t, score, max, ratio: score / max };
+      });
+      const top = Math.max(...typeResults.map(r => r.ratio));
+      const primaries = top > 0 ? typeResults.filter(r => Math.abs(r.ratio - top) < 1e-9) : [];
+      const moodHigh = answers['B6'] === 2;
+
+      const foodResults = FOOD_GROUPS
+        .map(g => ({ ...g, avg: groupScore(g, answers) }))
+        .filter(g => g.avg !== null && g.avg >= 0.5)
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 2);
+
+      const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+      return (
+        <div className="wrap">
+          <div style={{ marginTop:18 }} />
+          <Hero title={<>結果がでたよ〜！🎉</>} sub="あなたのガス腹のタイプと、張りやすいかもしれない食材です" />
+
+          {primaries.length === 0 ? (
+            <div className="pop-card" style={{ padding:20 }}>
+              <div style={{ fontSize:16, fontWeight:900, marginBottom:8 }}>🌿 今のところ、ガス腹さんではなさそう！</div>
+              <div style={{ fontSize:13, lineHeight:1.7, fontWeight:600 }}>
+                どのタイプにもほとんど当てはまりませんでした。この調子でいこうね。気になる日が出てきたら、またやってみてね。
+              </div>
+            </div>
+          ) : primaries.map(p => (
+            <div key={p.id} style={{
+              background:`linear-gradient(135deg, ${p.color.soft} 0%, ${p.color.light} 100%)`,
+              border:`3px solid ${p.color.primary}`, borderRadius:24, padding:20, marginBottom:18,
+              boxShadow:`0 5px 0 ${p.color.primary}33`, position:'relative', overflow:'hidden',
+            }}>
+              <span className="twinkle" style={{ position:'absolute', top:10, right:14, fontSize:20 }}>✨</span>
+              <div style={{ fontSize:11, fontWeight:800, color: p.color.deep, letterSpacing:'0.05em', marginBottom:4 }}>
+                🎯 あなたのガス腹タイプ{primaries.length > 1 ? '（同点で2つ以上）' : ''}
+              </div>
+              <div style={{ fontSize:23, fontWeight:900, color: p.color.deep, lineHeight:1.3, marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ fontSize:28 }}>{p.emoji}</span>{p.name}
+              </div>
+              {p.mine && (
+                <div style={{
+                  display:'inline-block', fontSize:11.5, fontWeight:800, color:'white',
+                  background: p.color.deep, padding:'4px 12px', borderRadius:99, marginBottom:10,
+                }}>🦘 私もこれでした！</div>
+              )}
+              <div style={{ fontSize:13.5, lineHeight:1.7, fontWeight:600, marginBottom:12 }}>{p.desc}</div>
+              <div style={{ background:'white', borderRadius:14, padding:'12px 14px', border:`2px dashed ${p.color.primary}` }}>
+                <div style={{ fontSize:11.5, fontWeight:800, color: p.color.deep, marginBottom:5 }}>🌱 今日からできる1つ</div>
+                <div style={{ fontSize:13.5, lineHeight:1.65, fontWeight:600 }}>{p.todo}</div>
+              </div>
+            </div>
+          ))}
+
+          {moodHigh && (
+            <div style={{
+              background:'#f5f3ff', border:'2.5px solid #a78bfa', borderRadius:18,
+              padding:'14px 16px', marginBottom:18, fontSize:12.5, lineHeight:1.75, fontWeight:600,
+            }}>
+              💜 気分の落ち込みや不安が「よくある」と答えてくれたあなたへ。<br />
+              2週間以上続いている、眠れない日が続く、毎日がつらいと感じるときは、ひとりで抱えずに、かかりつけ医や心療内科に相談してね。お腹のケアと一緒に進めて大丈夫だよ。
+            </div>
+          )}
+
+          {/* 5タイプの点数 */}
+          <div className="pop-card" style={{ padding:20 }}>
+            <div style={{ fontSize:14, fontWeight:900, marginBottom:14 }}>📊 5タイプの当てはまり度</div>
+            {typeResults.map(r => (
+              <div key={r.id} style={{ marginBottom:12 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
+                  <span style={{ fontSize:13, fontWeight:800 }}><span style={{ fontSize:15 }}>{r.emoji}</span> {r.name}</span>
+                  <span style={{ fontSize:13, fontWeight:900, color: r.color.deep }}>{r.score} / {r.max}</span>
+                </div>
+                <div className="rbar-track">
+                  <div className="rbar-fill" style={{ width:`${r.score / r.max * 100}%`, background:`linear-gradient(90deg, ${r.color.primary}, ${r.color.deep})` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 食材 */}
+          <div className="pop-card" style={{ padding:20 }}>
+            <div style={{ fontSize:14, fontWeight:900, marginBottom:10 }}>🍽️ あなたが張りやすいかもしれない食材</div>
+            {foodResults.length === 0 ? (
+              <div style={{ fontSize:13, lineHeight:1.7, fontWeight:600, marginBottom:10 }}>
+                今回のチェックでは、とくに目立つ食材グループはありませんでした。
+              </div>
+            ) : foodResults.map(g => (
+              <div key={g.id} style={{ background:'#fffaf0', border:'2px solid #fff4c1', borderRadius:16, padding:'12px 14px', marginBottom:10 }}>
+                <div style={{ fontSize:14, fontWeight:900, marginBottom:4 }}>{g.emoji} {g.name}</div>
+                <div style={{ fontSize:11.5, color:'var(--gray)', fontWeight:700, marginBottom:6 }}>
+                  {g.items.map(it => it.t).join('／')}
+                </div>
+                <div style={{ fontSize:13, lineHeight:1.65, fontWeight:600 }}>{g.tip}</div>
+              </div>
+            ))}
+            <div style={{ fontSize:12.5, lineHeight:1.7, fontWeight:700, color:'var(--mint-deep)', background:'var(--mint-soft)', borderRadius:12, padding:'10px 12px' }}>
+              全部やめなくて大丈夫。腸の住人のエサでもあるから、量とタイミングで調整するのがコツ。続けて張るなら、3日メモして部屋で相談してね。
+            </div>
+          </div>
+
+          {/* 部屋への案内 */}
+          <div style={{
+            background:'linear-gradient(135deg, #ecfdf5 0%, #ccf7eb 100%)', border:'3px solid var(--mint)',
+            borderRadius:24, padding:20, marginBottom:14, boxShadow:'0 5px 0 #5ed4b855',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+              <img src="../assets/kangaroo.png" alt="" className="wobble" style={{ width:60, height:60, flexShrink:0, objectFit:'contain' }} />
+              <div style={{ fontSize:14, fontWeight:900, lineHeight:1.5 }}>
+                ガス腹は、体質だからって<br />あきらめるものじゃないの。
+              </div>
+            </div>
+            <div style={{ fontSize:13, lineHeight:1.75, fontWeight:600, marginBottom:14 }}>
+              腸内を知る → 腸を育てる → 食べ方 → 動き方。<br />
+              あなたのタイプに合った順番の続きは「ととのえ実験室」で。<br />
+              部屋にいる人は、結果のスクショやタイプ名を書き込んでね🌿
+            </div>
+            <a href={ROOM_URL} target="_blank" rel="noopener noreferrer" style={{
+              display:'block', textAlign:'center', padding:'15px 16px',
+              background:'linear-gradient(135deg, #5ed4b8 0%, #10b981 100%)', color:'white',
+              fontSize:15, fontWeight:900, borderRadius:99, textDecoration:'none', boxShadow:'0 5px 0 #047857',
+            }}>
+              🌿 まだの人は「ととのえ実験室」へ（匿名・見るだけOK）
+            </a>
+          </div>
+
+          {/* シェア */}
+          <div className="pop-card" style={{ padding:16 }}>
+            <div style={{ fontSize:12, fontWeight:800, marginBottom:10, textAlign:'center' }}>🦘 ガス腹仲間にも教えてあげてね</div>
+            <div style={{ display:'flex', gap:8 }}>
+              <a
+                href={`https://line.me/R/msg/text/?${encodeURIComponent(SHARE_TEXT + '\n' + shareUrl)}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ flex:1, textAlign:'center', padding:'13px 8px', background:'#06c755', color:'white', fontSize:13, fontWeight:900, borderRadius:99, textDecoration:'none', boxShadow:'0 3px 0 #058842' }}
+              >💬 LINEで送る</a>
+              <button
+                onClick={() => {
+                  if (navigator.share) navigator.share({ title:'ガス腹原因特定アプリ', text: SHARE_TEXT, url: shareUrl }).catch(()=>{});
+                  else if (navigator.clipboard) navigator.clipboard.writeText(shareUrl);
+                }}
+                style={{ flex:1, padding:'13px 8px', border:'none', background:'var(--purple)', color:'white', fontFamily:'inherit', fontSize:13, fontWeight:900, borderRadius:99, cursor:'pointer', boxShadow:'0 3px 0 #6d28d9' }}
+              >🔗 リンクをコピー</button>
+            </div>
+          </div>
+
+          <button className="sub-btn" onClick={onBack}>← 答えを見直す</button>
+          <button className="sub-btn" onClick={onRestart}>🔄 最初からやり直す</button>
+          <Footer />
+        </div>
+      );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  APP                                                                 */
+    /* ------------------------------------------------------------------ */
+    function App() {
+      const [answers, setAnswers] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+        catch (e) { return {}; }
+      });
+      const [page, setPage] = useState('A');
+
+      useEffect(() => {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(answers)); } catch (e) {}
+      }, [answers]);
+
+      const go = p => { setPage(p); window.scrollTo({ top:0, behavior:'smooth' }); };
+      const handleSelect = (id, v) => setAnswers(prev => ({ ...prev, [id]: v }));
+      const restart = () => { setAnswers({}); go('A'); };
+
+      const doneA = allItemsA.filter(it => answers[it.id] !== undefined).length;
+      const doneB = allItemsB.filter(it => answers[it.id] !== undefined).length;
+
+      if (page === 'result') return <ResultsView answers={answers} onBack={() => go('B')} onRestart={restart} />;
+
+      if (page === 'B') {
+        return (
+          <div className="wrap">
+            <div style={{ marginTop:18 }} />
+            <Hero title={<>パート2<br />食材チェック</>} sub="食べたあとにお腹が張るか、選んでね。食べないものは「食べない」でOK" />
+            <ProgressBar done={doneB} total={allItemsB.length} label="パート2の進み具合" />
+            <QuestionCard
+              label="食材ごとに答えてね" emoji="🍽️"
+              items={allItemsB} answers={answers} onSelect={handleSelect}
+              color={{ primary:'#ffd93d', light:'#fff4c1', deep:'#a16207', soft:'#fffbeb' }}
+              opts={OPTS_B}
+            />
+            <button className="sub-btn" onClick={() => go('A')}>← パート1に戻る</button>
+            <Footer />
+            <div className="bottom-area"><div className="bottom-inner">
+              <button className="main-btn" onClick={() => go('result')}>
+                {doneB === allItemsB.length ? '🎯 結果を見る！' : `🎯 結果を見る（残り ${allItemsB.length - doneB} 問）`}
+              </button>
+            </div></div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="wrap">
+          <div style={{
+            display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+            background:'linear-gradient(90deg, #5ed4b8, #10b981)', color:'white', fontWeight:900, fontSize:12,
+            padding:'9px 14px', borderRadius:99, marginTop:18, marginBottom:10, boxShadow:'0 4px 0 #047857',
+          }}>
+            🎁 ととのえ実験室 参加プレゼント
+          </div>
+          <Hero title={<>ガス腹<br />原因特定アプリ</>} sub="ガス腹を卒業した薬剤師がつくった、5分のセルフチェック。最近1か月のお腹で答えてね" />
+          <RedFlagBox />
+          <ProgressBar done={doneA} total={allItemsA.length} label="パート1の進み具合" />
+          {TYPES.map((t, i) => (
+            <QuestionCard
+              key={t.id} label={`質問グループ ${i + 1}`} emoji="🦘"
+              items={t.items} answers={answers} onSelect={handleSelect} color={t.color} opts={OPTS_A}
+            />
+          ))}
+          <Footer />
+          <div className="bottom-area"><div className="bottom-inner">
+            <button className="main-btn" onClick={() => go('B')}>
+              {doneA === allItemsA.length ? '次へ：パート2 食材チェック →' : `次へ（残り ${allItemsA.length - doneA} 問）→`}
+            </button>
+          </div></div>
+        </div>
+      );
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
