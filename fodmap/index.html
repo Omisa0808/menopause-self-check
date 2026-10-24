@@ -261,6 +261,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     <button role="tab" id="tab-log" aria-selected="true" data-view="log">記録</button>
     <button role="tab" id="tab-ref" aria-selected="false" data-view="ref">FODMAP一覧・判定のしかた</button>
     <button role="tab" id="tab-supp" aria-selected="false" data-view="supp">サプリ・医薬品</button>
+    <button role="tab" id="tab-meds" aria-selected="false" data-view="meds">薬の詳細</button>
     <button role="tab" id="tab-rel" aria-selected="false" data-view="rel">食品と症状の関係</button>
     <button role="tab" id="tab-report" aria-selected="false" data-view="report">コーチに見せる</button>
   </nav>
@@ -363,9 +364,16 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     <textarea id="report-fallback" class="sr" readonly tabindex="-1" aria-hidden="true"></textarea>
   </section>
 
+  <section id="view-meds" class="panel ref" hidden>
+    <h2>その他の医薬品（詳細）</h2>
+    <p class="small muted">お腹に影響が出ることのある薬を、種類ごとにまとめました。薬の名前（一般名でも商品名でも）を記録欄に入れると、「これかも」や関係の表に入ります。カードをタップすると記録欄に入ります。</p>
+    <p class="small"><b>薬は自分の判断でやめたり減らしたりしないでください。</b>気になる症状があるときは、この記録を持って医師・薬剤師に相談しましょう。ここに書いたのは、よく知られている傾向の一部です。</p>
+    <div id="meds-list" class="ref"></div>
+  </section>
+
   <section id="view-supp" class="panel ref" hidden>
     <h2>サプリ・医薬品</h2>
-    <p class="small muted">飲んだら食事と同じ欄に記録すると、「これかも」の判定に入ります。カードをタップすると記録欄に入ります。薬をやめたり量を変えたりするときは、医師・薬剤師に相談してください。</p>
+    <p class="small muted">飲んだら食事と同じ欄に記録すると、「これかも」の判定に入ります。カードをタップすると記録欄に入ります。薬や漢方をやめたり量を変えたりするときは、自分で決めず医師・薬剤師に相談してください。ほかの薬は「薬の詳細」タブにあります。</p>
     <p class="small"><span class="risk-tag high">高</span>高FODMAP　<span class="risk-tag low">低</span>低FODMAP（お腹にやさしい）　<span class="risk-tag other">注意</span>FODMAPではないが、お腹に響きやすい</p>
     <div id="supp-list" class="ref"></div>
   </section>
@@ -465,7 +473,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     { cat: "乳酸菌・整腸", pic: "🦠", items: [
       { f: "乳酸菌サプリ", pic: "🦠", text: "多くは問題ありません。飲み始めの数日はガス・張りが出ることがあります。オリゴ糖（イヌリン・FOS）入りは高FODMAPなので、成分表示を確かめましょう。" },
       { f: "ビフィズス菌サプリ", pic: "🦠", text: "乳酸菌と同じく、飲み始めはガスが出ることがあります。オリゴ糖入りに注意。" },
-      { f: "整腸剤", pic: "💊", text: "菌の入った薄。乳糖を含む製品もあるので、乳糖が苦手なら添付文書を確かめましょう。" },
+      { f: "整腸剤", pic: "💊", text: "菌の入った薬。乳糖を含む製品もあるので、乳糖が苦手なら添付文書を確かめましょう。" },
     ] },
     { cat: "油", pic: "🫗", items: [
       { f: "MCTオイル", pic: "🫗", text: "FODMAPではありませんが、量が多いときや空腹時にお腹がゆるくなりやすい油です。小さじ半分くらいから試しましょう。" },
@@ -478,10 +486,17 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       { f: "グアーガム", pic: "🥤", text: "グアーガム分解物（PHGG）は低FODMAPで、お腹にやさしい食物繊維です。" },
     ] },
     { cat: "医薬品・ミネラル", pic: "💊", items: [
-      { f: "酸化マグネシウム", pic: "💊", text: "便をやわらかくする薄。ゆるい便や下痢の原因になります。" },
-      { f: "鉄剤", pic: "💊", text: "便秘や腹痛が出やすい薄。便が黒くなることもあります。" },
+      { f: "酸化マグネシウム", pic: "💊", text: "便をやわらかくする薬。ゆるい便や下痢の原因になります。" },
+      { f: "鉄剤", pic: "💊", text: "便秘や腹痛が出やすい薬。便が黒くなることもあります。" },
       { f: "ビタミンC", pic: "🍋", text: "大量（1日に数g）だと下痢しやすくなります。" },
-      { f: "抗生物質", pic: "💊", text: "腸内細菌が変わり、下痢になりやすい薄です。" },
+      { f: "抗生物質", pic: "💊", text: "腸内細菌が変わり、下痢になりやすい薬です。" },
+      { f: "抗うつ薬", pic: "💊", text: "メンタル系の薬（抗うつ薬・抗不安薬・睡眠薬など）は、飲み始めや量を変えたときに、吐き気・下痢・便秘が出ることがあります。自分の判断でやめず、気になるときは医師に相談しましょう。" },
+      { f: "糖尿病薬", pic: "💊", text: "種類によってお腹への出方が違います。メトホルミンは下痢、α-GIはガス・お腹の張り、GLP-1の薬は吐き気・下痢・便秘が出やすいです。薬の名前で記録すると判定に入ります（詳しくは「薬の詳細」タブ）。" },
+    ] },
+    { cat: "漢方薬", pic: "🌿", items: [
+      { f: "漢方薬", pic: "🌿", text: "処方によってお腹への影響はいろいろ。市販の顆粒には乳糖が使われているものもあります。処方名ごと記録すると、関係の表で合う・合わないが見えてきます。" },
+      { f: "大黄入りの漢方", pic: "🍂", text: "大黄（だいおう）を含むもの（大黄甘草湯・麻子仁丸・防風通聖散・潤腸湯など）は、便をゆるくする働きがあります。" },
+      { f: "桂枝加芍薬湯", pic: "🌿", text: "お腹の張りや痛み、下痢と便秘をくり返すときに使われることがある処方です。効いているかは、飲んだ日と症状を記録して見比べましょう。" },
     ] },
   ];
   // Not FODMAPs, but they upset the gut; boost = extra when the symptom matches
@@ -493,9 +508,24 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     { id: "probiotic", tag: "飲み始めにガス", words: ["乳酸菌", "ビフィズス菌", "整腸剤"], base: 0, why: "", boost: { gas: [1, "乳酸菌など（飲み始めはガス・張りが出ることがある）"] } },
     { id: "mct", tag: "量が多いとゆるくなる", words: ["MCT", "ＭＣＴ", "中鎖脂肪酸"], base: 0.9, why: "MCTオイル（量が多いとお腹がゆるくなる）", boost: { diarrhea: [1.2, "MCTオイル（下痢を起こしやすい）"], pain: [0.4, "MCTオイル（腹痛が出ることがある）"] } },
     { id: "dextrin", tag: "量でガス", words: ["難消化性デキストリン"], base: 0, why: "", boost: { gas: [0.8, "難消化性デキストリン（量が多いとガス・張り）"] } },
-    { id: "magnesium", tag: "便をゆるくする", words: ["酸化マグネシウム", "マグミット", "マグネシウム"], base: 0.7, why: "マグネシウム（便をゆるくする）", boost: { diarrhea: [1.5, "酸化マグネシウム（便をゆるくする薄）"] } },
+    { id: "magnesium", tag: "便をゆるくする", words: ["酸化マグネシウム", "マグミット", "マグネシウム"], base: 0.7, why: "マグネシウム（便をゆるくする）", boost: { diarrhea: [1.5, "酸化マグネシウム（便をゆるくする薬）"] } },
     { id: "iron", tag: "便秘しやすい", words: ["鉄剤", "鉄サプリ", "鉄分サプリ"], base: 0.5, why: "鉄剤（お腹に響きやすい）", boost: { constipation: [1.5, "鉄剤（便秘を起こしやすい）"], pain: [0.5, "鉄剤（腹痛が出ることがある）"] } },
     { id: "vitc", tag: "大量で下痢", words: ["ビタミンC", "ビタミンＣ"], base: 0, why: "", boost: { diarrhea: [1, "ビタミンC（大量だと下痢しやすい）"] } },
+    { id: "psych", tag: "飲み始めにお腹へ影響も", words: ["抗うつ薬", "抗不安薬", "睡眠薬", "睡眠導入剤", "精神安定剤", "メンタル系の薬", "SSRI", "SNRI", "セルトラリン", "ジェイゾロフト", "エスシタロプラム", "レクサプロ", "パロキセチン", "パキシル", "フルボキサミン", "ルボックス", "デプロメール", "デュロキセチン", "サインバルタ", "ミルタザピン", "リフレックス", "レメロン", "アミトリプチリン", "トリプタノール"], base: 0.3, why: "メンタル系の薬（お腹に響くことがある）", boost: { diarrhea: [0.6, "メンタル系の薬（下痢が出ることがある）"], constipation: [0.6, "メンタル系の薬（便秘が出ることがある）"] } },
+    { id: "daio", tag: "便をゆるくする", words: ["大黄", "麻子仁丸", "防風通聖散", "潤腸湯", "桃核承気湯", "調胃承気湯"], base: 0.5, why: "大黄入りの漢方（便をゆるくする）", boost: { diarrhea: [1.2, "大黄入りの漢方（下痢を起こしやすい）"] } },
+    { id: "metformin", tag: "下痢しやすい", words: ["メトホルミン", "メトグルコ", "グリコラン"], base: 0.5, why: "メトホルミン（お腹に響きやすい）", boost: { diarrhea: [1.2, "メトホルミン（下痢を起こしやすい）"], pain: [0.4, "メトホルミン（腹痛が出ることがある）"] } },
+    { id: "agi", tag: "ガス・張りが出やすい", words: ["α-GI", "αGI", "アカルボース", "グルコバイ", "ボグリボース", "ベイスン", "ミグリトール", "セイブル"], base: 0.5, why: "α-GI（糖が大腸で発酵しやすい）", boost: { gas: [1.2, "α-GI（ガス・お腹の張りを起こしやすい）"], diarrhea: [0.6, "α-GI（下痢が出ることがある）"] } },
+    { id: "glp1", tag: "お腹に響きやすい", words: ["GLP-1", "GLP1", "オゼンピック", "リベルサス", "セマグルチド", "マンジャロ", "チルゼパチド", "トルリシティ", "デュラグルチド", "ビクトーザ", "リラグルチド", "ウゴービ", "ゼップバウンド"], base: 0.5, why: "GLP-1の薬（胃腸の動きがゆっくりになる）", boost: { diarrhea: [0.8, "GLP-1の薬（下痢が出ることがある）"], constipation: [0.8, "GLP-1の薬（便秘が出ることがある）"], pain: [0.4, "GLP-1の薬（腹痛が出ることがある）"], gas: [0.4, "GLP-1の薬（お腹の張りが出ることがある）"] } },
+    { id: "sglt2", tag: "便秘することも", words: ["SGLT2", "フォシーガ", "ダパグリフロジン", "ジャディアンス", "エンパグリフロジン", "カナグル", "スーグラ", "ルセフィ", "デベルザ"], base: 0.2, why: "SGLT2阻害薬（水分が抜けやすい）", boost: { constipation: [0.5, "SGLT2阻害薬（便秘が出ることがある）"] } },
+    { id: "dpp4", tag: "まれに便秘", words: ["DPP-4", "ジャヌビア", "グラクティブ", "トラゼンタ", "エクア", "ネシーナ", "テネリア", "スイニー"], base: 0.1, why: "DPP-4阻害薬（お腹への影響は少なめ）", boost: { constipation: [0.3, "DPP-4阻害薬（便秘が出ることがある）"] } },
+    { id: "nsaid", tag: "胃に負担", words: ["ロキソニン", "ロキソプロフェン", "イブプロフェン", "アスピリン", "バファリン", "セレコックス", "ボルタレン", "痛み止め", "鎮痛剤"], base: 0.3, why: "痛み止め（胃腸に負担がかかりやすい）", boost: { pain: [0.8, "痛み止め（胃痛・腹痛を起こしやすい）"], diarrhea: [0.3, "痛み止め（下痢が出ることがある）"] } },
+    { id: "ppi", tag: "長く飲むと腸内に影響", words: ["PPI", "オメプラゾール", "オメプラール", "ランソプラゾール", "タケプロン", "エソメプラゾール", "ネキシウム", "ボノプラザン", "タケキャブ", "ラベプラゾール", "パリエット"], base: 0.3, why: "胃酸を抑える薬（腸内細菌に影響することがある）", boost: { diarrhea: [0.5, "胃酸を抑える薬（下痢が出ることがある）"], gas: [0.4, "胃酸を抑える薬（長く飲むと張りやガスが出ることがある）"] } },
+    { id: "loperamide", tag: "便秘しやすい", words: ["ロペラミド", "ロペミン", "下痢止め"], base: 0.3, why: "下痢止め", boost: { constipation: [1.2, "下痢止め（効きすぎて便秘になることがある）"], gas: [0.4, "下痢止め（お腹が張ることがある）"] } },
+    { id: "stimlax", tag: "腹痛・下痢しやすい", words: ["センノシド", "プルゼニド", "センナ", "ピコスルファート", "ラキソベロン", "ビサコジル", "コーラック", "刺激性下剤"], base: 0.5, why: "刺激性の便秘薬（腸を強く動かす）", boost: { diarrhea: [1.2, "刺激性の便秘薬（下痢を起こしやすい）"], pain: [0.8, "刺激性の便秘薬（腹痛を起こしやすい）"] } },
+    { id: "newlax", tag: "下痢しやすい", words: ["リナクロチド", "リンゼス", "ルビプロストン", "アミティーザ", "エロビキシバット", "グーフィス", "モビコール"], base: 0.5, why: "便秘の薬（便をゆるくする）", boost: { diarrhea: [1.1, "便秘の薬（下痢が出ることがある）"], pain: [0.5, "便秘の薬（腹痛が出ることがある）"] } },
+    { id: "ramosetron", tag: "便秘しやすい", words: ["ラモセトロン", "イリボー"], base: 0.3, why: "イリボー（下痢型IBSの薬）", boost: { constipation: [1.2, "イリボー（便秘・硬い便になることがある）"] } },
+    { id: "polycarbophil", tag: "張りが出ることも", words: ["ポリカルボフィル", "コロネル", "ポリフル"], base: 0.2, why: "ポリカルボフィル（便の水分を調整）", boost: { gas: [0.6, "ポリカルボフィル（お腹の張りが出ることがある）"] } },
+    { id: "hormone", tag: "張りが出ることも", words: ["低用量ピル", "経口避妊薬", "ヤーズ", "ルナベル", "フリウェル", "トリキュラー", "ジェミーナ", "ホルモン補充療法", "HRT", "エストラーナ", "ジュリナ", "ディビゲル", "ル・エストロジェル", "メノエイドコンビパッチ", "デュファストン", "ディナゲスト"], base: 0.2, why: "女性ホルモンの薬（むくみ・張りが出ることがある）", boost: { gas: [0.4, "女性ホルモンの薬（お腹の張りが出ることがある）"], fatigue: [0.3, "女性ホルモンの薬（だるさが出ることがある）"] } },
     { id: "antibiotic", tag: "腸内細菌に影響", words: ["抗生物質", "抗生剤"], base: 0.5, why: "抗生物質（腸内細菌が変わる）", boost: { diarrhea: [1.5, "抗生物質（下痢を起こしやすい）"] } },
   ];
   const KINDS = [
@@ -1191,6 +1221,56 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   });
   (async () => { try { downloads = window.claude?.use ? await window.claude.use("downloads") : null; } catch (e) { downloads = null; } if (downloads) { $("dl-csv").hidden = false; $("dl-txt").hidden = false; } })();
 
+  // ---- medicines detail tab ----
+  const MEDS = [
+    { cat: "メンタル系の薬", pic: "🧠", items: [
+      { f: "SSRI", names: "セルトラリン（ジェイゾロフト）、エスシタロプラム（レクサプロ）、パロキセチン（パキシル）、フルボキサミン（ルボックス・デプロメール）", gi: ["吐き気", "下痢", "便秘"], text: "飲み始めの1〜2週間に出やすく、多くはだんだん慣れていきます。" },
+      { f: "SNRI", names: "デュロキセチン（サインバルタ）など", gi: ["吐き気", "便秘"], text: "飲み始めや量を増やしたときに出やすいです。" },
+      { f: "ミルタザピン", names: "リフレックス・レメロン", gi: ["便秘", "食欲が増える"], text: "眠気や体重の増加が出ることもあります。" },
+      { f: "アミトリプチリン", names: "トリプタノールなど（三環系）", gi: ["便秘", "口の渇き"], text: "腸の動きをゆっくりにするため、便秘が出やすい薬です。" },
+      { f: "抗不安薬", names: "睡眠薬・精神安定剤もふくむ", gi: ["お腹への影響は少なめ"], text: "お腹よりも眠気やふらつきが出やすい薬です。" },
+    ] },
+    { cat: "糖尿病の薬", pic: "🩸", items: [
+      { f: "メトホルミン", names: "メトグルコ、グリコラン", gi: ["下痢", "腹痛", "吐き気"], text: "飲み始めに多く、食後に飲む・少量から始めると軽くなることがあります。" },
+      { f: "α-GI", names: "アカルボース（グルコバイ）、ボグリボース（ベイスン）、ミグリトール（セイブル）", gi: ["ガス", "お腹の張り", "下痢"], text: "糖の吸収をゆっくりにするため、大腸で発酵してガスが出やすくなります。" },
+      { f: "GLP-1の薬", names: "オゼンピック、リベルサス、マンジャロ、トルリシティ、ビクトーザ など", gi: ["吐き気", "下痢", "便秘", "お腹の張り"], text: "胃腸の動きをゆっくりにする薬です。始めた頃や量を増やしたときに出やすいです。" },
+      { f: "SGLT2阻害薬", names: "フォシーガ、ジャディアンス、カナグル、スーグラ など", gi: ["便秘", "のどの渇き"], text: "尿から糖と水分が出ていくので、水分不足で便が硬くなることがあります。" },
+      { f: "DPP-4阻害薬", names: "ジャヌビア、トラゼンタ、エクア、ネシーナ など", gi: ["お腹への影響は少なめ", "便秘"], text: "お腹への影響は比較的少ない薬です。" },
+    ] },
+    { cat: "痛み止め・胃の薬", pic: "💊", items: [
+      { f: "痛み止め", names: "ロキソプロフェン（ロキソニン）、イブプロフェン、アスピリン（バファリン）など", gi: ["胃痛", "腹痛", "下痢"], text: "胃腸の粘膜に負担がかかります。空腹時を避けて飲みましょう。" },
+      { f: "PPI", names: "オメプラゾール、ランソプラゾール（タケプロン）、ネキシウム、タケキャブ など", gi: ["下痢", "お腹の張り"], text: "胃酸を抑える薬。長く飲み続けると腸内細菌のバランスに影響することがあると言われています。" },
+    ] },
+    { cat: "お通じ・IBSの薬", pic: "🚽", items: [
+      { f: "下痢止め", names: "ロペラミド（ロペミン）など", gi: ["便秘", "お腹の張り"], text: "効きすぎると便秘になることがあります。" },
+      { f: "刺激性下剤", names: "センノシド（プルゼニド）、ピコスルファート（ラキソベロン）、コーラック など", gi: ["腹痛", "下痢"], text: "腸を強く動かすので、お腹が痛くなりやすい薬です。続けて使うと効きにくくなることも。" },
+      { f: "リンゼス", names: "リナクロチド。ほかにアミティーザ、グーフィス、モビコール など", gi: ["下痢", "腹痛"], text: "便をやわらかくする便秘の薬。効きすぎると下痢になります。" },
+      { f: "イリボー", names: "ラモセトロン（下痢型IBSの薬）", gi: ["便秘", "硬い便"], text: "下痢を抑える分、便秘ぎみになることがあります。" },
+      { f: "コロネル", names: "ポリカルボフィル（ポリフル）", gi: ["お腹の張り"], text: "便の水分を調整する薬。水を多めに飲みましょう。" },
+    ] },
+    { cat: "女性ホルモンの薬", pic: "🌸", items: [
+      { f: "低用量ピル", names: "ヤーズ、ルナベル、フリウェル、トリキュラー など", gi: ["吐き気", "お腹の張り"], text: "飲み始めの数か月に出やすく、だんだん慣れることが多いです。" },
+      { f: "ホルモン補充療法", names: "エストラーナ、ジュリナ、ディビゲル、デュファストン など（HRT）", gi: ["お腹の張り", "むくみ", "胸の張り"], text: "更年期の治療で使われます。気になる症状は記録して、受診のときに伝えましょう。" },
+    ] },
+  ];
+  function renderMeds() {
+    const box = $("meds-list"); box.replaceChildren();
+    for (const c of MEDS) {
+      box.append(el("div", { class: "group" }, [
+        el("div", { class: "cat-head" }, [el("span", { class: "cat-pic", text: c.pic, "aria-hidden": "true" }), el("h3", { text: c.cat })]),
+        el("div", { class: "supp-grid" }, c.items.map(x => el("button", { type: "button", class: "supp other", title: "タップで記録欄に入れる", onclick: () => addFood(x.f) }, [
+          el("span", { class: "pic", text: "💊", "aria-hidden": "true" }),
+          el("span", { class: "supp-body" }, [
+            el("b", { text: x.f }),
+            el("span", { class: "small muted", text: x.names }),
+            el("span", { class: "chips" }, x.gi.map(g => el("span", { class: "fat-tag", text: g }))),
+            el("span", { class: "small", text: x.text }),
+          ]),
+        ]))),
+      ]));
+    }
+  }
+
   function renderSupps() {
     const box = $("supp-list"); box.replaceChildren();
     for (const c of SUPPS) {
@@ -1214,11 +1294,11 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   $("ref-q").addEventListener("input", renderRef);
   function show(v) {
     for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.view === v));
-    $("view-log").hidden = v !== "log"; $("view-ref").hidden = v !== "ref"; $("view-supp").hidden = v !== "supp"; $("view-report").hidden = v !== "report"; $("view-rel").hidden = v !== "rel";
+    $("view-log").hidden = v !== "log"; $("view-ref").hidden = v !== "ref"; $("view-supp").hidden = v !== "supp"; $("view-report").hidden = v !== "report"; $("view-rel").hidden = v !== "rel"; $("view-meds").hidden = v !== "meds";
   }
   for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => show(b.dataset.view));
 
-  renderRef(); renderSupps(); renderSymForm(); renderDayForm(); renderAll(); init();
+  renderRef(); renderSupps(); renderMeds(); renderSymForm(); renderDayForm(); renderAll(); init();
 })();
 </script>
 
