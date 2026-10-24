@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="../assets/kangaroo.png">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<title>おなかダイアリー</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@500&family=Noto+Color+Emoji&display=swap">
+<style>
+/* Layout: one working column on phones, forms left / timeline right on wide screens; abdomen grid is the centerpiece of the symptom form */
+:root {
+  /* palette taken from the kangaroo: cheek pink, bag red, panel blue, coat white, fur gray */
+  --bg: #f9f6fd;
+  --surface: #ffffff;
+  --ink: #352e40;
+  --muted: #766b86;
+  --line: #e7def3;
+  --accent: #8a63c4;
+  --accent-soft: #efe7fa;
+  --pink: #e07fa3;
+  --mark: #c63a43;
+  --mark-soft: #fbe2e3;
+  --warn: #a0700a;
+  --warn-soft: #fbf0d6;
+  --sky: #e3f1f8;
+  --sky-ink: #4f8fae;
+  --title: #6f45a8;
+  --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, monospace;
+  --font-pic: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1720; --surface: #24202d; --ink: #efe9f7; --muted: #b2a6c4; --line: #3c3449;
+    --accent: #b99af0; --accent-soft: #3a2f52; --pink: #f29abb; --mark: #ff7a7f; --mark-soft: #4a2427;
+    --warn: #e7b84a; --warn-soft: #3a2f14; --sky: #20333d; --sky-ink: #8cc4de; --title: #cdb3ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1720; --surface: #24202d; --ink: #efe9f7; --muted: #b2a6c4; --line: #3c3449;
+  --accent: #b99af0; --accent-soft: #3a2f52; --pink: #f29abb; --mark: #ff7a7f; --mark-soft: #4a2427;
+  --warn: #e7b84a; --warn-soft: #3a2f14; --sky: #20333d; --sky-ink: #8cc4de; --title: #cdb3ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 2rem; letter-spacing: .04em; color: var(--title); }
+.kicker { font-family: var(--font-display); font-size: .95rem; font-weight: 700; color: var(--pink); letter-spacing: .08em; margin: 0; }
+h1 .deco { font-size: .9rem; color: var(--pink); vertical-align: .55em; margin-left: .3em; letter-spacing: .1em; }
+h1 .hl { background: linear-gradient(transparent 62%, var(--accent-soft) 62%); padding: 0 .1em; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+header { display: grid; gap: 6px; }
+.hero { grid-template-columns: minmax(0, 1fr) auto; gap: 12px 20px; align-items: end; background: linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 50%, var(--sky) 100%); border: 1px solid var(--line); border-radius: 24px; padding: 20px 20px 0; overflow: hidden; }
+.hero-text { padding-bottom: 20px; }
+.hero-text { display: grid; gap: 6px; min-width: 0; }
+.mascot-wrap { display: grid; justify-items: end; gap: 6px; max-width: 300px; }
+.mascot { width: 190px; height: auto; max-width: 100%; display: block; }
+.bubble { position: relative; background: var(--surface); border: 1.5px solid var(--accent); color: var(--ink); border-radius: 14px; padding: 8px 12px; font-size: .85rem; line-height: 1.5; font-weight: 500; }
+.bubble::after { content: ""; position: absolute; right: 70px; bottom: -7px; width: 12px; height: 12px; background: var(--surface); border-right: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent); transform: rotate(45deg); }
+@media (max-width: 640px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .mascot-wrap { grid-template-columns: minmax(0, 1fr) 120px; align-items: center; max-width: none; justify-items: stretch; }
+  .mascot { width: 120px; }
+  .bubble::after { right: -7px; bottom: auto; top: 50%; margin-top: -6px; transform: rotate(-45deg); }
+}
+@media (prefers-reduced-motion: no-preference) { .mascot { animation: hop 3.2s ease-in-out infinite; } }
+@keyframes hop { 0%, 82%, 100% { transform: translateY(0); } 88% { transform: translateY(-8px); } 94% { transform: translateY(0); } }
+.status { font-size: .8rem; color: var(--muted); }
+.status.local { color: var(--warn); }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; font: inherit; font-weight: 500; color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+.cols { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) { .cols { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
+.stack { display: grid; gap: 20px; min-width: 0; align-content: start; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+label { font-size: .85rem; font-weight: 500; color: var(--muted); display: grid; gap: 4px; }
+input[type="text"], input[type="datetime-local"], input[type="date"], input[type="search"], textarea {
+  font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; width: 100%;
+}
+textarea { min-height: 56px; resize: vertical; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; background: var(--accent); color: var(--surface); }
+.btn.alt { background: var(--mark); }
+.btn.quiet { background: transparent; color: var(--muted); font-weight: 500; padding: 6px 10px; }
+.btn.danger { background: var(--mark); padding: 6px 14px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.group { display: grid; gap: 6px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: .78rem; border-radius: 999px; padding: 2px 10px; background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.chip.hi { background: var(--mark-soft); color: var(--mark); }
+.chip.plain { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.detect { min-height: 1.6em; }
+
+/* suspicion marks */
+.kamo { display: inline-flex; align-items: center; gap: 5px; font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 1px 9px 1px 7px; white-space: nowrap; }
+.kamo .dots { letter-spacing: 1px; font-size: .7rem; }
+.kamo.l3 { background: var(--mark); color: var(--surface); }
+.kamo.l2 { background: var(--mark-soft); color: var(--mark); border: 1px solid var(--mark); }
+.kamo.l1 { background: var(--warn-soft); color: var(--warn); }
+.kamo.rel { background: var(--mark-soft); color: var(--mark); border: 1px dashed var(--mark); }
+.kamo.rel.l3 { background: var(--mark); color: var(--surface); border-style: solid; }
+table.rel td, table.rel th { text-align: center; white-space: nowrap; }
+table.rel td:first-child, table.rel th:first-child { text-align: left; white-space: normal; min-width: 7em; font-weight: 700; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+table.rel .base-row td { background: var(--accent-soft); color: var(--title); font-weight: 700; }
+td.heat { border-left: 2px solid var(--surface); }
+.day-q { display: grid; grid-template-columns: 5em minmax(0, 1fr); gap: 8px; align-items: center; }
+.day-q-label { font-weight: 700; font-size: .9rem; }
+.day-q .toggle button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+.chip.day-chip { background: var(--sky); color: var(--sky-ink); margin-left: 6px; }
+.day-ctx { font-size: .85rem; }
+.day-ctx .chip.day-chip:first-child { margin-left: 0; }
+.kamo.late { background: var(--accent-soft); color: var(--title); border: 1px dashed var(--accent); }
+.kamo.late.l3 { background: var(--accent); color: var(--surface); border-style: solid; }
+.late-box { border-top: 1px dashed var(--accent); padding-top: 6px; margin-top: 4px; display: grid; gap: 2px; }
+.late-head { color: var(--title); font-weight: 700; }
+.cand { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: start; padding: 8px 0; border-top: 1px dashed var(--line); }
+.cand:first-child { border-top: 0; }
+.cand-name { font-weight: 700; overflow-wrap: anywhere; }
+.why { grid-column: 2; font-size: .8rem; color: var(--muted); }
+
+/* timeline */
+.log { display: grid; gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; background: var(--surface); }
+.card.sym { border-left: 4px solid var(--mark); }
+.card.example { border-style: dashed; opacity: .88; }
+.card-top { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.card-title { font-weight: 700; font-size: 1.02rem; overflow-wrap: anywhere; }
+.items { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.item { display: inline-flex; gap: 6px; align-items: center; font-size: .88rem; border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px; }
+.empty { color: var(--muted); }
+.confirm { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .85rem; }
+
+/* symptom form */
+.toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle button { font: inherit; font-size: .9rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 6px 16px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--mark); border-color: var(--mark); color: var(--surface); }
+.belly-wrap { display: grid; gap: 8px; justify-items: center; }
+.belly {
+  width: min(280px, 100%); aspect-ratio: 5 / 6; max-width: 100%; border: 2px solid var(--muted); border-radius: 46% 46% 40% 40% / 30% 30% 48% 48%;
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 14% 8% 16%; gap: 4px; position: relative; background: var(--bg);
+}
+.belly button { font: inherit; font-size: .7rem; line-height: 1.25; color: var(--muted); border: 1px dashed var(--line); background: transparent; border-radius: 10px; cursor: pointer; padding: 2px; }
+.belly button.center { border-color: var(--accent); color: var(--accent); }
+.belly button[aria-pressed="true"] { background: var(--mark-soft); border: 2px solid var(--mark); color: var(--mark); font-weight: 700; }
+.belly .navel { position: absolute; left: 50%; top: 61%; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transform: translate(-50%, -50%); pointer-events: none; }
+.preview { border-radius: 10px; padding: 12px; background: var(--bg); border: 1px solid var(--line); display: grid; gap: 6px; }
+.where { font-size: .88rem; }
+.where b { color: var(--mark); }
+
+/* reference */
+.ref { display: grid; gap: 16px; }
+.group-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.foods { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.tile { font: inherit; position: relative; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 14px 6px 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: center; min-width: 0; }
+.tile.high { border-color: var(--mark); box-shadow: inset 0 -4px 0 var(--mark-soft); }
+.tile.mid { border-color: var(--warn); border-style: dashed; }
+.tile:hover { transform: translateY(-2px); }
+.pic { font-family: var(--font-pic); font-size: 2.3rem; line-height: 1; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; background: var(--bg); }
+.tile.high .pic { background: var(--mark-soft); }
+.tile.mid .pic { background: var(--warn-soft); }
+.tile .fname { font-weight: 700; font-size: .9rem; line-height: 1.3; overflow-wrap: anywhere; }
+.tile .risk-tag { position: absolute; top: 6px; left: 6px; margin: 0; }
+.ftype { font-size: .68rem; color: var(--muted); line-height: 1.3; }
+.fat-tag { font-size: .66rem; font-weight: 700; color: var(--warn); background: var(--warn-soft); border-radius: 999px; padding: 0 7px; }
+.cat-head { display: flex; gap: 10px; align-items: center; }
+.cat-pic { font-family: var(--font-pic); font-size: 1.6rem; line-height: 1; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.filters .e { font-family: var(--font-pic); margin-right: 4px; }
+.item .e { font-family: var(--font-pic); }
+@media (prefers-reduced-motion: no-preference) { .tile { transition: transform .15s; } }
+.chip.mid { background: var(--warn-soft); color: var(--warn); }
+.risk-tag { display: inline-block; font-size: .68rem; font-weight: 700; border-radius: 4px; padding: 0 5px; margin-right: 5px; vertical-align: 1px; }
+.risk-tag.high { background: var(--mark); color: var(--surface); }
+.risk-tag.mid { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); }
+.risk-tag.other { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+.tile.other { border-color: var(--accent); border-style: dashed; }
+.tile.other .pic { background: var(--accent-soft); }
+.risk-tag.low { background: var(--accent); color: var(--surface); }
+.loose-tag { font-size: .66rem; font-weight: 700; color: var(--surface); background: var(--mark); border-radius: 999px; padding: 0 7px; }
+.supp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+.supp { font: inherit; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.supp.high { border-color: var(--mark); }
+.supp.high .pic { background: var(--mark-soft); }
+.supp.low { border-color: var(--accent); }
+.supp.low .pic { background: var(--accent-soft); }
+.supp.other { border-color: var(--warn); border-style: dashed; }
+.supp.other .pic { background: var(--warn-soft); }
+.supp-body { display: grid; gap: 4px; min-width: 0; }
+.supp-body .risk-tag { margin: 0; }
+.supp .pic { width: 52px; height: 52px; font-size: 1.9rem; }
+/* coach report */
+.report-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.report-sheet { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--surface); display: grid; gap: 14px; }
+.report-sheet h3 { color: var(--title); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.stat { background: var(--accent-soft); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-num); font-size: 1.4rem; color: var(--title); font-variant-numeric: tabular-nums; }
+.stat span { font-size: .78rem; color: var(--muted); }
+.day { display: grid; gap: 4px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.day-head { font-weight: 700; color: var(--title); }
+.ev { display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 8px; font-size: .88rem; }
+.ev .num { color: var(--muted); }
+.ev.sym { color: var(--mark); }
+.ev .sub { grid-column: 2; font-size: .8rem; color: var(--muted); }
+.ref > .group + .group { border-top: 1px solid var(--line); padding-top: 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .04em; }
+.risk { display: grid; gap: 2px; }
+.risk-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+.risk-row:first-child { border-top: 0; }
+@media (prefers-reduced-motion: no-preference) { .btn, .belly button, .toggle button { transition: background .15s, border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-text">
+    <p class="kicker">カンガルーみさみさの</p>
+    <h1><span class="hl">おなかダイアリー</span><span class="deco" aria-hidden="true">♡ ✦</span></h1>
+    <p class="muted small">食べたものと時刻を記録し、お腹の症状（下痢・便秘・ガス・腹痛）や肌荒れ・頭痛・だるさが出たらその時に記録します。症状と直近10時間に食べたものから、あなたにとって怪しい食品に「これかも」を3段階で付けます。</p>
+    <p class="status" id="status">保存先を確認しています…</p>
+    </div>
+    <div class="mascot-wrap">
+      <p class="bubble" id="bubble" aria-live="polite">こんにちは！一緒にお腹の調子を見ていこうね。</p>
+      <img class="mascot" alt="白衣を着たカンガルーのみさみさ" src="data:image/webp;base64,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">
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-log" aria-selected="true" data-view="log">記録</button>
+    <button role="tab" id="tab-ref" aria-selected="false" data-view="ref">FODMAP一覧・判定のしかた</button>
+    <button role="tab" id="tab-supp" aria-selected="false" data-view="supp">サプリ・医薬品</button>
+    <button role="tab" id="tab-rel" aria-selected="false" data-view="rel">食品と症状の関係</button>
+    <button role="tab" id="tab-report" aria-selected="false" data-view="report">コーチに見せる</button>
+  </nav>
+
+  <section id="view-log" class="cols">
+    <div class="stack">
+      <form class="panel" id="day-form" autocomplete="off" onsubmit="return false">
+        <div class="row" style="justify-content:space-between">
+          <h2>今日の体調メモ</h2>
+          <span class="small muted" id="day-state"></span>
+        </div>
+        <label for="day-date">日付
+          <input type="date" id="day-date">
+        </label>
+        <div id="day-qs" class="group"></div>
+        <label for="day-note">ひとことメモ（任意）
+          <input type="text" id="day-note" placeholder="例：冷えた、運動した、外食続き">
+        </label>
+        <p class="small muted">タップするとすぐ保存されます。もう一度タップで取り消し。<span id="day-msg"></span></p>
+      </form>
+
+      <form class="panel" id="meal-form" autocomplete="off">
+        <h2>食べたものを記録</h2>
+        <label for="food">食べたもの・飲んだもの（サプリや薬も。「、」で区切ると1品ずつ判定します）
+          <input type="text" id="food" placeholder="例：玉ねぎのカレー、ヨーグルト、りんご" required>
+        </label>
+        <div class="detect chips" id="detect" aria-live="polite"></div>
+        <label for="eaten-at">食べた時刻
+          <input type="datetime-local" id="eaten-at" required>
+        </label>
+        <div class="row"><button class="btn" type="submit" id="save-meal">食事を記録</button><span class="small muted" id="meal-msg"></span></div>
+      </form>
+
+      <form class="panel" id="sym-form" autocomplete="off">
+        <h2>症状を記録</h2>
+        <div class="group">
+          <h3>どんな症状？（複数可）</h3>
+          <p class="small muted">お腹</p>
+          <div class="toggle" id="kinds"></div>
+          <p class="small muted">お腹以外</p>
+          <div class="toggle" id="kinds2"></div>
+        </div>
+        <label for="sym-at">症状が出た時刻
+          <input type="datetime-local" id="sym-at" required>
+        </label>
+        <div class="belly-wrap">
+          <h3>お腹のどの辺り？（タップで印）</h3>
+          <div class="belly" id="belly"></div>
+          <p class="small muted">真ん中（へその周り）だけなら小腸、それ以外も含むなら大腸の目安です。お腹以外の症状だけなら、印は付けなくて大丈夫です。</p>
+        </div>
+        <div class="group">
+          <h3>強さ</h3>
+          <div class="toggle" id="severity"></div>
+        </div>
+        <label for="sym-note">メモ（任意）
+          <textarea id="sym-note" placeholder="例：朝から2回トイレ"></textarea>
+        </label>
+        <div class="preview" id="preview" aria-live="polite"></div>
+        <div class="row"><button class="btn alt" type="submit" id="save-sym">症状を記録</button><span class="small muted" id="sym-msg"></span></div>
+      </form>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <h2>あなたの要注意食品</h2>
+          <span class="small muted" id="risk-note"></span>
+        </div>
+        <div class="risk" id="risk"></div>
+      </div>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <h2>これまでの記録</h2>
+          <span class="small muted num" id="count"></span>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-rel" class="panel ref" hidden>
+    <h2>食品と症状の関係（食べてから48時間まで）</h2>
+    <p class="small muted">食品ごとに、食べたあと各時間帯に症状が出た割合です。いちばん上の「ふだん」は、すべての食事での割合です。ふだんより赤く濃いマスほど、その時間帯に症状とつながっていそうです。2回以上食べた食品だけを出しています。</p>
+    <div class="filters" id="rel-kind"></div>
+    <div class="table-wrap" id="rel-table"></div>
+    <p class="small muted">「関係」の●は、0〜48時間のどこかで症状が出た割合が、ふだんよりどれだけ高いかと回数から付けています。記録から見た傾向で、診断ではありません。</p>
+  </section>
+
+  <section id="view-report" class="panel ref" hidden>
+    <h2>コーチに見せるレポート</h2>
+    <p class="small muted">期間を選ぶと、その間の食事・症状・「これかも」をまとめます。ファイルで保存するか、文章をコピーしてLINEやメールに貼ってください。メモ欄の内容もそのまま入ります。</p>
+    <div class="filters" id="report-range"></div>
+    <div class="report-actions">
+      <button class="btn" type="button" id="dl-csv" hidden>表（CSV）で保存</button>
+      <button class="btn" type="button" id="dl-txt" hidden>文章（テキスト）で保存</button>
+      <button class="btn quiet" type="button" id="copy-txt" style="border:1px solid var(--accent);color:var(--accent)">文章をコピー</button>
+      <span class="small muted" id="report-msg" aria-live="polite"></span>
+    </div>
+    <div class="report-sheet" id="report"></div>
+    <textarea id="report-fallback" class="sr" readonly tabindex="-1" aria-hidden="true"></textarea>
+  </section>
+
+  <section id="view-supp" class="panel ref" hidden>
+    <h2>サプリ・医薬品</h2>
+    <p class="small muted">飲んだら食事と同じ欄に記録すると、「これかも」の判定に入ります。カードをタップすると記録欄に入ります。薬をやめたり量を変えたりするときは、医師・薬剤師に相談してください。</p>
+    <p class="small"><span class="risk-tag high">高</span>高FODMAP　<span class="risk-tag low">低</span>低FODMAP（お腹にやさしい）　<span class="risk-tag other">注意</span>FODMAPではないが、お腹に響きやすい</p>
+    <div id="supp-list" class="ref"></div>
+  </section>
+
+  <section id="view-ref" class="panel ref" hidden>
+    <div class="row" style="justify-content:space-between">
+      <h2>FODMAPの多い食品</h2>
+      <label for="ref-q" style="min-width:min(260px,100%)"><span class="sr">絞り込み</span>
+        <input type="search" id="ref-q" placeholder="食品名で絞り込み">
+      </label>
+    </div>
+    <p class="small"><span class="risk-tag high">高</span>高リスク：普通の量でもFODMAPが多い　<span class="risk-tag mid">中</span>中リスク：少なければ大丈夫だが、量が多いと高くなる　<span class="risk-tag other">注意</span>FODMAPではないが、お腹に響きやすい</p>
+    <p class="small muted">食品をタップすると「食べたもの」に入ります。中リスクは「これかも」の点数を高リスクより低くしています。最新の判定はモナシュ大学のFODMAPアプリで確かめてください。</p>
+    <div class="filters" id="ref-filters" aria-label="絞り込み"></div>
+    <div id="ref-list" class="ref"></div>
+    <div class="group" style="border-top:1px solid var(--line);padding-top:16px">
+      <h2>「これかも」の付けかた</h2>
+      <p class="small">症状を記録すると、その時刻から<b>さかのぼって10時間以内</b>に食べたものを1品ずつ点数にし、点数の高い順に並べます。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>見るところ</th><th>点数が上がるとき</th></tr></thead>
+          <tbody>
+            <tr><td>場所と時間</td><td>お腹の真ん中だけ → 摂取から4時間以内なら小腸として合う。<br>周辺部・全体 → 摂取から4〜10時間なら大腸として合う。</td></tr>
+            <tr><td>FODMAPの多さ</td><td>一覧の高リスク食品なら大きく、中リスク食品なら少し上がる。</td></tr>
+            <tr><td>脂質</td><td>ルーや揚げ物など脂質が多いものは少し上がる。FODMAPではないが、腸を刺激しやすいため。</td></tr>
+            <tr><td>カフェイン・お酒・辛いもの</td><td>コーヒー・紅茶・緑茶、お酒、辛いものは上がる。症状に下痢があるときは大きく上がる。</td></tr>
+            <tr><td>遅れて出るかも</td><td>「これかも」とは別の印です。これまでの記録全体で、その食品を食べた<b>10〜48時間後</b>に症状が出た割合が、ほかの食事より目立って高いと付きます。卵・乳・小麦・大豆・そば・えび/かに・ナッツ・ごまは料理名からまとめて数えます（例：卵焼き・オムレツ→卵）。2回以上重なってから付き、回数と割合が増えるほど●が増えます。<br><span class="muted">記録から見た傾向で、アレルギーの検査や診断ではありません。じんましん・息苦しさなどがあればすぐ受診し、アレルギーが気になるときは医師に相談してください。</span></td></tr>
+            <tr><td>サプリ・薬</td><td>「サプリ・医薬品」タブのものは、それぞれ起こしやすい症状のときに上がる（例：酸化マグネシウムは下痢、鉄剤は便秘）。</td></tr>
+            <tr><td>症状の種類</td><td>下痢：果糖・乳糖・ポリオール／ガス・便秘：フルクタン・GOS が合う。</td></tr>
+            <tr><td>あなたの過去の記録</td><td>ほかの症状の前10時間にも食べていた食品ほど上がる。記録が増えるほど、あなた向けの判定になります。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row small"><span class="kamo l3"><span class="dots">●●●</span>これかも</span>とても怪しい
+        <span class="kamo l2"><span class="dots">●●○</span>これかも</span>怪しい
+        <span class="kamo l1"><span class="dots">●○○</span>これかも</span>少し怪しい</div>
+      <p class="small muted">目安であり、診断ではありません。続く症状や強い症状は医師に相談してください。</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const GROUPS = [
+    { id: "fructan", name: "フルクタン", kind: "オリゴ糖", foods: ["小麦", "パン", "パスタ", "うどん", "ラーメン", "焼きそば", "ピザ", "クッキー", "ライ麦", "大麦", "玉ねぎ", "にんにく", "長ねぎ", "エシャロット", "ニラ", "ごぼう", "カシューナッツ", "ピスタチオ", "スイカ", "柿", "桃", "カレールー", "シチュールー", "ハヤシルー", "ホワイトソース", "グラタン", "シュークリーム", "エクレア", "ケーキ", "イヌリン", "チコリ", "フラクトオリゴ糖"] },
+    { id: "gos", name: "GOS（ガラクトオリゴ糖）", kind: "オリゴ糖", foods: ["大豆", "豆乳", "絹ごし豆腐", "ひよこ豆", "レンズ豆", "いんげん豆", "小豆", "あんこ", "グリーンピース", "フムス"] },
+    { id: "lactose", name: "乳糖", kind: "二糖類", foods: ["ミルクティー", "シュークリーム", "エクレア", "ケーキ", "カフェオレ", "牛乳", "ヨーグルト", "アイスクリーム", "生クリーム", "練乳", "カフェラテ", "カッテージチーズ", "リコッタ", "クリームチーズ"] },
+    { id: "fructose", name: "果糖（過剰）", kind: "単糖類", foods: ["りんご", "梨", "マンゴー", "スイカ", "はちみつ", "アスパラガス", "果糖ぶどう糖液糖", "ドライフルーツ"] },
+    { id: "polyol", name: "ポリオール", kind: "糖アルコール", foods: ["マッシュルーム", "しいたけ", "カリフラワー", "アボカド", "さくらんぼ", "桃", "プラム", "プルーン", "あんず", "ソルビトール", "キシリトール", "マルチトール", "シュガーレスガム"] },
+  ];
+  // Moderate: fine in small amounts, high in larger servings (scored lower than high)
+  const MID = [
+    { f: "そば", g: ["fructan"], note: "小麦粉入り" }, { f: "オートミール", g: ["fructan"] },
+    { f: "ブロッコリー", g: ["fructan"] }, { f: "芽キャベツ", g: ["fructan"] }, { f: "ビーツ", g: ["fructan", "gos"] },
+    { f: "さつまいも", g: ["polyol"] }, { f: "セロリ", g: ["polyol"] }, { f: "とうもろこし", g: ["polyol"] },
+    { f: "バナナ", g: ["fructan"], note: "熟したもの" }, { f: "グレープフルーツ", g: ["fructan"] }, { f: "ライチ", g: ["polyol"] }, { f: "ココナッツ", g: ["polyol"] },
+    { f: "枝豆", g: ["fructan"] }, { f: "アーモンド", g: ["gos"] }, { f: "ヘーゼルナッツ", g: ["fructan", "gos"] },
+  ];
+  // How the reference list is grouped for reading; scoring still uses GROUPS / MID (FODMAP types)
+  const CATS = [
+    { name: "穀物・パン・麺", foods: ["小麦", "パン", "パスタ", "うどん", "ラーメン", "焼きそば", "ピザ", "クッキー", "ライ麦", "大麦", "そば", "オートミール"] },
+    { name: "野菜・きのこ", foods: ["玉ねぎ", "にんにく", "長ねぎ", "エシャロット", "ニラ", "ごぼう", "アスパラガス", "カリフラワー", "マッシュルーム", "しいたけ", "ブロッコリー", "芽キャベツ", "ビーツ", "さつまいも", "セロリ", "とうもろこし"] },
+    { name: "果物", foods: ["りんご", "梨", "マンゴー", "スイカ", "桃", "柿", "さくらんぼ", "プラム", "プルーン", "あんず", "アボカド", "ドライフルーツ", "バナナ", "グレープフルーツ", "ライチ", "ココナッツ"] },
+    { name: "豆・大豆製品", foods: ["大豆", "豆乳", "絹ごし豆腐", "ひよこ豆", "レンズ豆", "いんげん豆", "小豆", "あんこ", "グリーンピース", "フムス", "枝豆"] },
+    { name: "乳製品", foods: ["牛乳", "ヨーグルト", "アイスクリーム", "生クリーム", "練乳", "カッテージチーズ", "リコッタ", "クリームチーズ"] },
+    { name: "ナッツ", foods: ["カシューナッツ", "ピスタチオ", "アーモンド", "ヘーゼルナッツ"] },
+    { name: "お菓子・スイーツ", foods: ["シュークリーム", "エクレア", "ケーキ"] },
+    { name: "飲み物", foods: ["コーヒー", "カフェラテ", "カフェオレ", "エスプレッソ", "紅茶", "ミルクティー", "緑茶", "抹茶", "ウーロン茶", "ほうじ茶", "エナジードリンク"] },
+    { name: "お酒", foods: ["ビール", "ワイン", "日本酒", "焼酎", "チューハイ", "ハイボール"] },
+    { name: "辛いもの", foods: ["唐辛子", "キムチ", "麻婆豆腐", "担々麺", "激辛料理"] },
+    { name: "ルー・ソース", foods: ["カレールー", "シチュールー", "ハヤシルー", "ホワイトソース", "グラタン"] },
+    { name: "甘味料・その他", foods: ["はちみつ", "果糖ぶどう糖液糖", "ソルビトール", "キシリトール", "マルチトール", "シュガーレスガム"] },
+  ];
+  const CAT_PIC = { "穀物・パン・麺": "🍞", "野菜・きのこ": "🥦", "果物": "🍎", "豆・大豆製品": "🫘", "乳製品": "🥛", "ナッツ": "🥜", "ルー・ソース": "🍛", "お菓子・スイーツ": "🍰", "飲み物": "☕", "お酒": "🍺", "辛いもの": "🌶️", "甘味料・その他": "🍯" };
+  // Low-FODMAP fibers: recorded and shown, never scored
+  const LOW = [{ f: "サイリウム", words: ["サイリウム", "オオバコ"] }, { f: "グアーガム", words: ["グアーガム"] }];
+  // Dishes typed without "ルー" still count as made with the roux
+  const ALIAS = [["カレー", "カレールー"], ["シチュー", "シチュールー"], ["ハヤシ", "ハヤシルー"]];
+  // Not a FODMAP, but fatty food can upset the gut too (scored lightly)
+  const FAT_WORDS = ["カレールー", "シチュールー", "ハヤシルー", "ホワイトソース", "グラタン", "揚げ", "フライ", "天ぷら", "とんかつ", "チキンカツ", "カツ丼", "カツカレー", "ベーコン", "バター", "マヨネーズ", "生クリーム", "シュークリーム", "エクレア", "ケーキ", "アイスクリーム", "ピザ"];
+  const PIC = {
+    "小麦": "🌾", "パン": "🍞", "パスタ": "🍝", "うどん": "🍜", "ラーメン": "🍜", "焼きそば": "🥡", "ピザ": "🍕", "クッキー": "🍪", "ライ麦": "🥖", "大麦": "🌾", "そば": "🥢", "オートミール": "🥣",
+    "玉ねぎ": "🧅", "にんにく": "🧄", "長ねぎ": "🥬", "エシャロット": "🧅", "ニラ": "🌿", "ごぼう": "🫚", "アスパラガス": "🌱", "カリフラワー": "🥦", "マッシュルーム": "🍄", "しいたけ": "🍄", "ブロッコリー": "🥦", "芽キャベツ": "🥬", "ビーツ": "🥗", "さつまいも": "🍠", "セロリ": "🌿", "とうもろこし": "🌽",
+    "りんご": "🍎", "梨": "🍐", "マンゴー": "🥭", "スイカ": "🍉", "桃": "🍑", "柿": "🍊", "さくらんぼ": "🍒", "プラム": "🫐", "プルーン": "🍇", "あんず": "🍑", "アボカド": "🥑", "ドライフルーツ": "🍇", "バナナ": "🍌", "グレープフルーツ": "🍊", "ライチ": "🍈", "ココナッツ": "🥥",
+    "大豆": "🫘", "豆乳": "🥛", "絹ごし豆腐": "🧈", "ひよこ豆": "🫘", "レンズ豆": "🫘", "いんげん豆": "🫛", "小豆": "🫘", "あんこ": "🍡", "グリーンピース": "🫛", "フムス": "🥙", "枝豆": "🫛",
+    "牛乳": "🥛", "ヨーグルト": "🥣", "アイスクリーム": "🍨", "生クリーム": "🍰", "練乳": "🥫", "カフェラテ": "☕", "カッテージチーズ": "🧀", "リコッタ": "🧀", "クリームチーズ": "🧀",
+    "カシューナッツ": "🥜", "ピスタチオ": "🥜", "アーモンド": "🌰", "ヘーゼルナッツ": "🌰",
+    "カレールー": "🍛", "シチュールー": "🍲", "ハヤシルー": "🍛", "ホワイトソース": "🫕", "グラタン": "🥘", "シュークリーム": "🧁", "エクレア": "🍫", "ケーキ": "🍰",
+    "紅茶": "🫖", "緑茶": "🍵", "抹茶": "🍵", "ウーロン茶": "🍵", "ほうじ茶": "🍵", "ミルクティー": "🧋",
+    "ビール": "🍺", "ワイン": "🍷", "日本酒": "🍶", "焼酎": "🥃", "チューハイ": "🍹", "ハイボール": "🥃",
+    "唐辛子": "🌶️", "キムチ": "🥬", "麻婆豆腐": "🌶️", "担々麺": "🍜", "激辛料理": "🔥",
+    "コーヒー": "☕", "カフェオレ": "☕", "エスプレッソ": "☕", "エナジードリンク": "🥫",
+    "はちみつ": "🍯", "果糖ぶどう糖液糖": "🥤", "ソルビトール": "🍬", "キシリトール": "🍬", "マルチトール": "🍫", "シュガーレスガム": "🍬",
+  };
+  // Supplements & medicines tab: what each does to the gut (scoring comes from GROUPS / LOW / TRIGGERS)
+  const SUPPS = [
+    { cat: "乳酸菌・整腸", pic: "🦠", items: [
+      { f: "乳酸菌サプリ", pic: "🦠", text: "多くは問題ありません。飲み始めの数日はガス・張りが出ることがあります。オリゴ糖（イヌリン・FOS）入りは高FODMAPなので、成分表示を確かめましょう。" },
+      { f: "ビフィズス菌サプリ", pic: "🦠", text: "乳酸菌と同じく、飲み始めはガスが出ることがあります。オリゴ糖入りに注意。" },
+      { f: "整腸剤", pic: "💊", text: "菌の入った薄。乳糖を含む製品もあるので、乳糖が苦手なら添付文書を確かめましょう。" },
+    ] },
+    { cat: "油", pic: "🫗", items: [
+      { f: "MCTオイル", pic: "🫗", text: "FODMAPではありませんが、量が多いときや空腹時にお腹がゆるくなりやすい油です。小さじ半分くらいから試しましょう。" },
+    ] },
+    { cat: "食物繊維サプリ", pic: "🌾", items: [
+      { f: "イヌリン", pic: "🌿", text: "チコリ由来の食物繊維。フルクタンそのもので高FODMAP。ガス・張りが出やすいです。" },
+      { f: "フラクトオリゴ糖", pic: "🍬", text: "FOS。高FODMAP（フルクタン）です。「お腹にやさしい」と書かれた食品にもよく入っています。" },
+      { f: "難消化性デキストリン", pic: "🥄", text: "トクホ飲料などに入っています。量が多いとガス・張りが出ることがあります。" },
+      { f: "サイリウム", pic: "🌾", text: "オオバコの種皮。低FODMAPの食物繊維で、下痢にも便秘にも使われます。水を多めに飲みましょう。" },
+      { f: "グアーガム", pic: "🥤", text: "グアーガム分解物（PHGG）は低FODMAPで、お腹にやさしい食物繊維です。" },
+    ] },
+    { cat: "医薬品・ミネラル", pic: "💊", items: [
+      { f: "酸化マグネシウム", pic: "💊", text: "便をやわらかくする薄。ゆるい便や下痢の原因になります。" },
+      { f: "鉄剤", pic: "💊", text: "便秘や腹痛が出やすい薄。便が黒くなることもあります。" },
+      { f: "ビタミンC", pic: "🍋", text: "大量（1日に数g）だと下痢しやすくなります。" },
+      { f: "抗生物質", pic: "💊", text: "腸内細菌が変わり、下痢になりやすい薄です。" },
+    ] },
+  ];
+  // Not FODMAPs, but they upset the gut; boost = extra when the symptom matches
+  const TRIGGERS = [
+    { id: "fat", tag: "脂質も多い", words: FAT_WORDS, base: 0.7, why: "脂質が多い（腸を刺激しやすい）", boost: {} },
+    { id: "caffeine", tag: "カフェイン", words: ["コーヒー", "カフェラテ", "カフェオレ", "エスプレッソ", "エナジードリンク", "紅茶", "ミルクティー", "緑茶", "抹茶", "ウーロン茶", "ほうじ茶"], base: 0.7, why: "カフェイン（腸を動かしやすい）", boost: { diarrhea: [0.8, "カフェイン（下痢を起こしやすい）"] } },
+    { id: "alcohol", tag: "アルコール", words: ["ビール", "ワイン", "日本酒", "焼酎", "チューハイ", "酎ハイ", "ハイボール", "ウイスキー", "梅酒", "お酒"], base: 0.7, why: "アルコール（腸を刺激しやすい）", boost: { diarrhea: [0.8, "アルコール（下痢を起こしやすい）"], headache: [0.8, "アルコール（頭痛を起こしやすい）"], fatigue: [0.4, "アルコール（だるさにつながりやすい）"] } },
+    { id: "spicy", tag: "辛い", words: ["唐辛子", "激辛", "キムチ", "麻婆", "担々", "タバスコ", "ハバネロ", "チゲ", "辛口"], base: 0.7, why: "辛いもの（腸を刺激しやすい）", boost: { diarrhea: [0.8, "辛いもの（下痢を起こしやすい）"], pain: [0.4, "辛いもの（腹痛を起こしやすい）"] } },
+    { id: "probiotic", tag: "飲み始めにガス", words: ["乳酸菌", "ビフィズス菌", "整腸剤"], base: 0, why: "", boost: { gas: [1, "乳酸菌など（飲み始めはガス・張りが出ることがある）"] } },
+    { id: "mct", tag: "量が多いとゆるくなる", words: ["MCT", "ＭＣＴ", "中鎖脂肪酸"], base: 0.9, why: "MCTオイル（量が多いとお腹がゆるくなる）", boost: { diarrhea: [1.2, "MCTオイル（下痢を起こしやすい）"], pain: [0.4, "MCTオイル（腹痛が出ることがある）"] } },
+    { id: "dextrin", tag: "量でガス", words: ["難消化性デキストリン"], base: 0, why: "", boost: { gas: [0.8, "難消化性デキストリン（量が多いとガス・張り）"] } },
+    { id: "magnesium", tag: "便をゆるくする", words: ["酸化マグネシウム", "マグミット", "マグネシウム"], base: 0.7, why: "マグネシウム（便をゆるくする）", boost: { diarrhea: [1.5, "酸化マグネシウム（便をゆるくする薄）"] } },
+    { id: "iron", tag: "便秘しやすい", words: ["鉄剤", "鉄サプリ", "鉄分サプリ"], base: 0.5, why: "鉄剤（お腹に響きやすい）", boost: { constipation: [1.5, "鉄剤（便秘を起こしやすい）"], pain: [0.5, "鉄剤（腹痛が出ることがある）"] } },
+    { id: "vitc", tag: "大量で下痢", words: ["ビタミンC", "ビタミンＣ"], base: 0, why: "", boost: { diarrhea: [1, "ビタミンC（大量だと下痢しやすい）"] } },
+    { id: "antibiotic", tag: "腸内細菌に影響", words: ["抗生物質", "抗生剤"], base: 0.5, why: "抗生物質（腸内細菌が変わる）", boost: { diarrhea: [1.5, "抗生物質（下痢を起こしやすい）"] } },
+  ];
+  const KINDS = [
+    { k: "diarrhea", label: "下痢", groups: ["fructose", "lactose", "polyol"] },
+    { k: "constipation", label: "便秘", groups: ["fructan", "gos"] },
+    { k: "gas", label: "ガス", groups: ["fructan", "gos"] },
+    { k: "pain", label: "腹痛", groups: [] },
+    { k: "skin", label: "肌荒れ・かゆみ", groups: [], other: true },
+    { k: "headache", label: "頭痛", groups: [], other: true },
+    { k: "fatigue", label: "だるさ", groups: [], other: true },
+  ];
+  const REGIONS = [
+    { k: "ru", label: "右上" }, { k: "mu", label: "みぞおち" }, { k: "lu", label: "左上" },
+    { k: "rm", label: "右わき腹" }, { k: "c", label: "真ん中\n(へそ周り)" }, { k: "lm", label: "左わき腹" },
+    { k: "rl", label: "右下" }, { k: "ml", label: "下腹" }, { k: "ll", label: "左下" },
+  ];
+  const SEV = [{ k: 1, label: "軽い" }, { k: 2, label: "中くらい" }, { k: 3, label: "強い" }];
+  const WINDOW_H = 10;
+  const regionLabel = k => (REGIONS.find(r => r.k === k)?.label || k).replace("\n", "");
+  const kindLabel = k => KINDS.find(x => x.k === k)?.label || k;
+  const groupName = id => GROUPS.find(g => g.id === id)?.name || id;
+
+  const $ = id => document.getElementById(id);
+  const el = (tag, props = {}, kids = []) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (v == null) continue;
+      if (k === "text") n.textContent = v; else if (k === "class") n.className = v;
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+    }
+    for (const c of [].concat(kids)) if (c != null) n.append(c);
+    return n;
+  };
+
+  // ---- food helpers ----
+  const splitItems = text => text.split(/[、,，・\/\n]+|\s{2,}/).map(s => s.trim()).filter(Boolean);
+  function fodmapOf(raw) {
+    let item = raw;
+    for (const [a, t] of ALIAS) if (raw.includes(a) && !raw.includes(t)) item += " " + t;
+    const groups = new Set(), foods = [];
+    let risk = null;
+    for (const g of GROUPS) for (const f of g.foods) if (item.includes(f)) { groups.add(g.id); risk = "high"; if (!foods.includes(f)) foods.push(f); }
+    if (!risk) for (const x of MID) if (item.includes(x.f)) { x.g.forEach(g => groups.add(g)); risk = "mid"; if (!foods.includes(x.f)) foods.push(x.f); }
+    if (!risk) for (const x of LOW) if (x.words.some(w => item.includes(w))) { risk = "low"; if (!foods.includes(x.f)) foods.push(x.f); }
+    const triggers = TRIGGERS.filter(t => t.words.some(w => item.includes(w)));
+    if (triggers.length && !foods.length) foods.push(triggers[0].words.find(w => item.includes(w)));
+    const loose = groups.has("fructose") || groups.has("lactose") || groups.has("polyol") || triggers.some(t => t.boost.diarrhea);
+    return { groups: [...groups], foods, risk, triggers, loose };
+  }
+  // the key that ties the same food across meals: the matched high-FODMAP food names if any, else the item text
+  const itemKey = item => { const f = fodmapOf(item).foods; return f.length ? f.slice().sort().join("+") : item; };
+
+  // ---- the rule: location + time ----
+  function locationOf(regions) {
+    if (!regions?.length) return null;
+    return regions.every(r => r === "c") ? "small" : "large";
+  }
+  function timingScore(loc, h) {
+    if (!loc) return { s: 1.2, text: "場所の印がないため時間は中立" };
+    if (loc === "small") {
+      if (h <= 4) return { s: 2, text: "真ん中・4時間以内で小腸の目安に合う" };
+      if (h <= 5) return { s: 1.2, text: "小腸の目安より少し遅い" };
+      return { s: 0.5, text: "小腸の目安より遅い" };
+    }
+    if (h >= 4 && h <= 10) return { s: 2, text: "周辺部・4〜10時間で大腸の目安に合う" };
+    if (h >= 3) return { s: 1.2, text: "大腸の目安より少し早い" };
+    return { s: 0.5, text: "大腸の目安より早い" };
+  }
+  const levelOf = s => s >= 5.5 ? 3 : s >= 4 ? 2 : s >= 2.5 ? 1 : 0;
+
+  // meals eaten within WINDOW_H hours before t
+  function mealsBefore(meals, t) {
+    const at = new Date(t).getTime();
+    return meals.map(m => ({ m, h: (at - new Date(m.eatenAt).getTime()) / 3600000 })).filter(x => x.h > 0 && x.h <= WINDOW_H);
+  }
+
+  // How often each food key appeared before OTHER symptoms (personal history)
+  function historyCounts(meals, symptoms, excludeId) {
+    const c = {};
+    for (const s of symptoms) {
+      if (s.id === excludeId) continue;
+      const seen = new Set();
+      for (const { m } of mealsBefore(meals, s.at)) for (const it of splitItems(m.food)) { const fs = fodmapOf(it).foods; (fs.length ? fs : [it]).forEach(k => seen.add(k)); }
+      for (const k of seen) c[k] = (c[k] || 0) + 1;
+    }
+    return c;
+  }
+
+  // ---- delayed pattern (10-48h): a personal tendency, not an allergy test ----
+  const LATE_MIN = 10, LATE_MAX = 48;
+  const ALLERGENS = [
+    { k: "卵", words: ["卵", "たまご", "玉子", "オムレツ", "マヨネーズ"] },
+    { k: "乳", words: ["牛乳", "チーズ", "ヨーグルト", "バター", "生クリーム", "ミルク", "カフェラテ", "カフェオレ", "シュークリーム", "アイスクリーム"] },
+    { k: "小麦", words: ["小麦", "パン", "トースト", "パスタ", "うどん", "ラーメン", "そうめん", "焼きそば", "ピザ", "ケーキ", "クッキー", "シュークリーム", "カレー", "シチュー", "天ぷら", "フライ", "餃子", "お好み焼き", "担々麺"] },
+    { k: "大豆", words: ["大豆", "豆腐", "豆乳", "納豆", "味噌", "醤油", "枝豆", "きな粉", "厚揚げ", "油揚げ"] },
+    { k: "そば", words: ["そば"], not: ["焼きそば"] },
+    { k: "えび・かに", words: ["えび", "エビ", "海老", "かに", "カニ", "蟹"] },
+    { k: "ナッツ", words: ["ピーナッツ", "落花生", "くるみ", "アーモンド", "カシューナッツ", "ピスタチオ", "ヘーゼルナッツ"] },
+    { k: "ごま", words: ["ごま", "胡麻"] },
+  ];
+  // what a food is counted as for the delayed pattern: allergen groups first, then FODMAP foods, else the item itself
+  function lateKeys(item) {
+    const keys = ALLERGENS.filter(a => a.words.some(w => item.includes(w)) && !(a.not || []).some(w => item.includes(w))).map(a => a.k + "を含むもの");
+    const f = fodmapOf(item).foods.filter(x => !keys.length || !ALLERGENS.some(a => a.words.includes(x)));
+    const all = [...new Set([...keys, ...f])];
+    return all.length ? all : [item];
+  }
+  function lateStats(meals, symptoms) {
+    const now = Date.now(), H = 3600000;
+    const symT = symptoms.map(x => new Date(x.at).getTime());
+    const per = {}; let tot = 0, totHit = 0;
+    for (const m of meals) {
+      const t = new Date(m.eatenAt).getTime();
+      const hit = symT.some(st => st - t >= LATE_MIN * H && st - t <= LATE_MAX * H);
+      if (!hit && now - t < LATE_MAX * H) continue; // not enough time has passed to know
+      tot++; if (hit) totHit++;
+      const keys = new Set(splitItems(m.food).flatMap(lateKeys));
+      for (const k of keys) { const a = per[k] || (per[k] = { key: k, n: 0, hit: 0 }); a.n++; if (hit) a.hit++; }
+    }
+    const base = tot ? totHit / tot : 0;
+    for (const a of Object.values(per)) {
+      const rate = a.hit / a.n, lift = rate - base; a.rate = rate;
+      a.level = a.hit >= 4 && rate >= 0.6 && lift >= 0.4 ? 3 : a.hit >= 3 && lift >= 0.3 ? 2 : a.hit >= 2 && lift >= 0.2 ? 1 : 0;
+    }
+    return { per, base };
+  }
+  // foods eaten 10-48h before this symptom that show the delayed pattern
+  function lateSuspects(sym, meals, stats) {
+    const at = new Date(sym.at).getTime(); const best = {};
+    for (const m of meals) {
+      const h = (at - new Date(m.eatenAt).getTime()) / 3600000;
+      if (h < LATE_MIN || h > LATE_MAX) continue;
+      for (const it of splitItems(m.food)) for (const k of lateKeys(it)) {
+        const st = stats.per[k]; if (!st || !st.level) continue;
+        if (!best[k] || best[k].h > h) best[k] = { key: k, item: it, h, level: st.level, n: st.n, hit: st.hit };
+      }
+    }
+    return Object.values(best).sort((a, b) => b.level - a.level || b.hit / b.n - a.hit / a.n);
+  }
+  const lateMark = lv => el("span", { class: "kamo late l" + lv, title: "遅れて出ているかも" }, [el("span", { class: "dots", text: "●".repeat(lv) + "○".repeat(3 - lv) }), "遅れて？"]);
+  const lateWhy = c => `食べた${c.n}回のうち${c.hit}回、10〜48時間後に症状`;
+
+  function suspects(sym, meals, symptoms) {
+    const loc = locationOf(sym.regions);
+    const hist = historyCounts(meals, symptoms, sym.id);
+    const gutSym = sym.kinds.some(k => !KINDS.find(x => x.k === k)?.other);
+    const kindGroups = new Set(sym.kinds.flatMap(k => KINDS.find(x => x.k === k)?.groups || []));
+    const best = {};
+    for (const { m, h } of mealsBefore(meals, sym.at)) {
+      for (const item of splitItems(m.food)) {
+        const fod = fodmapOf(item); const key = itemKey(item);
+        const t = timingScore(loc, h);
+        let score = t.s; const why = [`摂取から${h.toFixed(1)}時間：${t.text}`];
+        if (fod.groups.length && !gutSym) why.push("FODMAPはお腹の症状と関係が深く、この症状では点数に入れていません");
+        if (fod.groups.length && gutSym) {
+          const hi = fod.risk === "high";
+          score += hi ? 2 : 1; why.push(`${hi ? "高" : "中"}FODMAP（${fod.groups.map(groupName).join("・")}）${hi ? "" : "・量で変わる"}`);
+          const match = fod.groups.filter(g => kindGroups.has(g));
+          if (match.length) { score += 1; why.push(`${sym.kinds.map(kindLabel).join("・")}と関係しやすい種類`); }
+        }
+        for (const tr of fod.triggers) {
+          const hits = sym.kinds.map(k => tr.boost[k]).filter(Boolean);
+          const add = tr.base + hits.reduce((s, b) => s + b[0], 0);
+          if (!add) continue;
+          score += add; why.push(hits.length ? hits[0][1] : tr.why);
+        }
+        const past = Math.max(0, ...(fod.foods.length ? fod.foods : [item]).map(k => hist[k] || 0));
+        const n = Math.min(3, past);
+        if (n) { score += n * 0.8; why.push(`ほかの症状の前にも${past}回食べていた`); }
+        const lv = levelOf(score);
+        if (!lv) continue;
+        if (!best[key] || best[key].score < score) best[key] = { key, item, mealId: m.id, eatenAt: m.eatenAt, h, score, level: lv, why };
+      }
+    }
+    return Object.values(best).sort((a, b) => b.score - a.score);
+  }
+
+  // ---- storage: db (private per person) or this browser as fallback ----
+  let meals = [], symptoms = [], days = [], store = null, exampleMode = false;
+  function localStore() {
+    const read = name => { try { return JSON.parse(localStorage.getItem("fodmap-" + name) || "[]"); } catch (e) { return []; } };
+    const mem = { meals: read("meals"), symptoms: read("symptoms"), days: read("days") }; const cbs = {};
+    const persist = name => { try { localStorage.setItem("fodmap-" + name, JSON.stringify(mem[name])); } catch (e) {} cbs[name]?.(mem[name].slice()); };
+    return {
+      subscribe(name, f) { cbs[name] = f; f(mem[name].slice()); },
+      async add(name, d) { mem[name].push({ ...d, id: name[0] + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }); persist(name); },
+      async remove(name, id) { mem[name] = mem[name].filter(x => x.id !== id); persist(name); },
+      async put(name, id, d) { mem[name] = [...mem[name].filter(x => x.id !== id), { ...d, id }]; persist(name); },
+    };
+  }
+  function dbStore(db, uid) {
+    const root = db.doc("data/users/" + uid + "/log");
+    return {
+      subscribe(name, f) {
+        root.collection(name).limit(1000).onSnapshot(
+          s => f(s.docs.map(d => ({ ...d.data(), id: d.id }))),
+          () => setStatus("記録を読み込めませんでした。ページを開き直してください。", true));
+      },
+      add: (name, d) => root.collection(name).add(d),
+      remove: (name, id) => root.collection(name).doc(id).delete(),
+      put: (name, id, d) => root.collection(name).doc(id).set(d),
+    };
+  }
+  function setStatus(t, local) { const s = $("status"); s.textContent = t; s.classList.toggle("local", !!local); }
+
+  async function init() {
+    let db = null, uid = null;
+    try {
+      if (window.claude?.use) {
+        db = await window.claude.use("db");
+        const user = await window.claude.use("user");
+        uid = user ? await user.id() : null;
+      }
+    } catch (e) { db = null; }
+    if (db && uid) { store = dbStore(db, uid); setStatus("あなただけが見られる場所に保存しています。"); }
+    else { store = localStore(); setStatus("このブラウザだけに保存しています（別の端末とは共有されません）。", true); }
+    store.subscribe("meals", list => { meals = list.filter(m => m.food && m.eatenAt); renderAll(); });
+    store.subscribe("symptoms", list => { symptoms = list.filter(s => s.at); renderAll(); });
+    store.subscribe("days", list => { days = list.filter(x => x.date); renderDayForm(); renderAll(); });
+  }
+
+  // ---- time helpers ----
+  const pad = n => String(n).padStart(2, "0");
+  const toLocalInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const fmt = s => { const d = new Date(s); return isNaN(d) ? s : `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  $("eaten-at").value = toLocalInput(new Date());
+  $("sym-at").value = toLocalInput(new Date());
+
+  const kamo = lv => el("span", { class: "kamo l" + lv, title: ["", "少し怪しい", "怪しい", "とても怪しい"][lv] },
+    [el("span", { class: "dots", text: "●".repeat(lv) + "○".repeat(3 - lv) }), "これかも"]);
+
+  // ---- example data (shown only while nothing is recorded) ----
+  function exampleData() {
+    const now = Date.now(), H = 3600000;
+    const m = [
+      { id: "exa", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 170 * H)) },
+      { id: "exb", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 160 * H)) },
+      { id: "exe1", food: "卵焼き、ご飯", eatenAt: toLocalInput(new Date(now - 122 * H)) },
+      { id: "exc", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 105 * H)) },
+      { id: "exd", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 98 * H)) },
+      { id: "exf", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 95 * H)) },
+      { id: "exe2", food: "オムレツ、ご飯", eatenAt: toLocalInput(new Date(now - 68 * H)) },
+      { id: "ex0", food: "玉ねぎスープ、パン", eatenAt: toLocalInput(new Date(now - 50 * H)) },
+      { id: "exe3", food: "ゆで卵、ご飯", eatenAt: toLocalInput(new Date(now - 43 * H)) },
+      { id: "ex1", food: "トースト、カフェラテ、りんご", eatenAt: toLocalInput(new Date(now - 27 * H)) },
+      { id: "ex2", food: "玉ねぎのカレー、ご飯", eatenAt: toLocalInput(new Date(now - 25 * H)) },
+      { id: "ex3", food: "おにぎり、味噌汁", eatenAt: toLocalInput(new Date(now - 22 * H)) },
+    ];
+    const s = [{ id: "exs1", at: toLocalInput(new Date(now - 100 * H)), kinds: ["pain", "diarrhea"], regions: ["lm", "ll"], severity: 2 }, { id: "exs0", at: toLocalInput(new Date(now - 44 * H)), kinds: ["gas"], regions: ["ml", "ll"], severity: 1 }, { id: "exs", at: toLocalInput(new Date(now - 19 * H)), kinds: ["gas", "pain"], regions: ["lm", "ll", "ml"], severity: 2 }];
+    const day = h => toLocalInput(new Date(now - h * H)).slice(0, 10);
+    const d = [
+      { date: day(170), sleep: 1, stress: 1, period: 0 }, { date: day(122), sleep: 2, stress: 2, period: 0 },
+      { date: day(100), sleep: 3, stress: 3, period: 1 }, { date: day(68), sleep: 2, stress: 1, period: 1 },
+      { date: day(44), sleep: 3, stress: 2, period: 2 }, { date: day(19), sleep: 3, stress: 3, period: 2 },
+    ].map(x => ({ ...x, id: x.date }));
+    return { m, s, d };
+  }
+  const data = () => (meals.length || symptoms.length || days.length) ? { m: meals, s: symptoms, d: days, ex: false } : { ...exampleData(), ex: true };
+
+  // ---- today's condition memo ----
+  const DAYQ = [
+    { k: "sleep", label: "睡眠", opts: [[1, "よく眠れた"], [2, "ふつう"], [3, "寝不足"]], flag: { 3: "寝不足" } },
+    { k: "stress", label: "ストレス", opts: [[1, "少ない"], [2, "ふつう"], [3, "多い"]], flag: { 3: "ストレス多め" } },
+    { k: "period", label: "生理", opts: [[0, "なし"], [1, "生理前"], [2, "生理中"]], flag: { 1: "生理前", 2: "生理中" } },
+  ];
+  const FLAGS = DAYQ.flatMap(q => Object.values(q.flag));
+  const dayOf = t => String(t).slice(0, 10);
+  const dayDoc = (d, date) => d.find(x => x.date === date);
+  const dayFlags = doc => doc ? DAYQ.map(q => q.flag[doc[q.k]]).filter(Boolean) : [];
+  $("day-date").value = toLocalInput(new Date()).slice(0, 10);
+  function renderDayForm() {
+    const date = $("day-date").value; const doc = days.find(x => x.date === date) || {};
+    $("day-qs").replaceChildren(...DAYQ.map(q => el("div", { class: "day-q" }, [el("span", { class: "day-q-label", text: q.label }),
+      el("div", { class: "toggle" }, q.opts.map(([v, l]) => el("button", { type: "button", "aria-pressed": String(doc[q.k] === v), onclick: () => saveDay({ [q.k]: doc[q.k] === v ? null : v }) }, l)))])));
+    if (document.activeElement !== $("day-note")) $("day-note").value = doc.note || "";
+    $("day-state").textContent = days.some(x => x.date === date) ? "この日のメモは保存済み" : "";
+  }
+  async function saveDay(patch) {
+    if (!store) return;
+    const date = $("day-date").value; if (!date) return;
+    const doc = { ...(days.find(x => x.date === date) || {}), ...patch, date }; delete doc.id;
+    try { await store.put("days", date, doc); flash("day-msg", "保存しました"); } catch (e) { flash("day-msg", "保存できませんでした。もう一度お試しください。"); }
+  }
+  $("day-date").addEventListener("input", renderDayForm);
+  $("day-note").addEventListener("change", () => { const doc = days.find(x => x.date === $("day-date").value) || {}; if (($("day-note").value.trim()) !== (doc.note || "")) saveDay({ note: $("day-note").value.trim() }); });
+
+  // ---- meal form ----
+  function renderDetect() {
+    const box = $("detect"); box.replaceChildren();
+    const items = splitItems($("food").value); if (!items.length) return;
+    for (const it of items) {
+      const f = fodmapOf(it);
+      const head = f.risk === "high" || f.risk === "mid" ? `${it}：${f.risk === "high" ? "高" : "中"}リスク（${f.groups.map(groupName).join("・")}）` : f.risk === "low" ? `${it}：低FODMAP` : it;
+      box.append(el("span", { class: f.risk === "high" ? "chip hi" : (f.risk === "mid" || f.triggers.length) ? "chip mid" : f.risk === "low" ? "chip" : "chip plain", text: head + f.triggers.map(t => "・" + t.tag).join("") }));
+    }
+  }
+  $("food").addEventListener("input", renderDetect);
+  $("meal-form").addEventListener("submit", async e => {
+    e.preventDefault(); if (!store) return;
+    const food = splitItems($("food").value).join("、"); const at = $("eaten-at").value;
+    if (!food || !at) return;
+    $("save-meal").disabled = true;
+    try {
+      await store.add("meals", { food, eatenAt: at, createdAt: new Date().toISOString() });
+      $("food").value = ""; renderDetect(); $("eaten-at").value = toLocalInput(new Date());
+      flash("meal-msg", "記録しました");
+    } catch (err) { flash("meal-msg", err?.code === "quota_exceeded" ? "保存できる件数がいっぱいです。古い記録を消してください。" : "保存できませんでした。もう一度お試しください。"); }
+    finally { $("save-meal").disabled = false; }
+  });
+  function flash(id, t) { $(id).textContent = t; setTimeout(() => { if ($(id).textContent === t) $(id).textContent = ""; }, 3000); }
+
+  // ---- symptom form ----
+  const draft = { kinds: new Set(), regions: new Set(), severity: 2 };
+  function toggles(box, items, isOn, onTap) {
+    box.replaceChildren(...items.map(it => el("button", { type: "button", "aria-pressed": String(isOn(it.k)), onclick: () => onTap(it.k) }, it.label)));
+  }
+  function renderSymForm() {
+    toggles($("kinds2"), KINDS.filter(x => x.other), k => draft.kinds.has(k), k => { draft.kinds.has(k) ? draft.kinds.delete(k) : draft.kinds.add(k); renderSymForm(); });
+    toggles($("kinds"), KINDS.filter(x => !x.other), k => draft.kinds.has(k), k => { draft.kinds.has(k) ? draft.kinds.delete(k) : draft.kinds.add(k); renderSymForm(); });
+    toggles($("severity"), SEV, k => draft.severity === k, k => { draft.severity = k; renderSymForm(); });
+    const belly = $("belly"); belly.replaceChildren(el("span", { class: "navel" }));
+    for (const r of REGIONS) belly.append(el("button", { type: "button", class: r.k === "c" ? "center" : null, "aria-pressed": String(draft.regions.has(r.k)), "aria-label": regionLabel(r.k),
+      onclick: () => { draft.regions.has(r.k) ? draft.regions.delete(r.k) : draft.regions.add(r.k); renderSymForm(); } },
+      r.label.split("\n").flatMap((t, i) => i ? [el("br"), t] : [t])));
+    renderPreview();
+  }
+  function whereText(regions) {
+    const loc = locationOf(regions);
+    if (!loc) return null;
+    return loc === "small" ? ["小腸", "お腹の真ん中。摂取から短時間のものが合います。"] : ["大腸", (regions.length >= 4 ? "お腹全体" : "お腹の周辺部") + "。摂取から4〜10時間のものが合います。"];
+  }
+  function renderPreview() {
+    const box = $("preview"); box.replaceChildren();
+    const at = $("sym-at").value;
+    const w = whereText([...draft.regions]);
+    box.append(el("p", { class: "where" }, w ? [el("b", { text: `場所の目安：${w[0]}　` }), w[1]] : "お腹の場所をタップすると、小腸か大腸かの目安が出ます。"));
+    if (!store || !at) return;
+    const recent = mealsBefore(meals, at);
+    if (!recent.length) { box.append(el("p", { class: "small muted", text: `この時刻の前${WINDOW_H}時間に記録した食事はありません。` })); return; }
+    if (!draft.kinds.size) { box.append(el("p", { class: "small muted", text: `前${WINDOW_H}時間の食事 ${recent.length}件。症状を選ぶと「これかも」を出します。` })); return; }
+    const list = suspects({ id: "draft", at, kinds: [...draft.kinds], regions: [...draft.regions] }, meals, symptoms);
+    box.append(el("h3", { text: "保存すると付く「これかも」" }));
+    if (!list.length) box.append(el("p", { class: "small muted", text: "怪しい食品は見つかりませんでした。" }));
+    else box.append(...list.slice(0, 5).map(c => el("div", { class: "row small" }, [kamo(c.level), el("b", { text: c.item }), el("span", { class: "muted", text: `摂取から${c.h.toFixed(1)}時間` })])));
+  }
+  $("sym-at").addEventListener("input", renderPreview);
+  $("sym-form").addEventListener("submit", async e => {
+    e.preventDefault(); if (!store) return;
+    if (!draft.kinds.size) { flash("sym-msg", "症状を1つ以上選んでください。"); return; }
+    const at = $("sym-at").value; if (!at) return;
+    $("save-sym").disabled = true;
+    try {
+      await store.add("symptoms", { at, kinds: [...draft.kinds], regions: [...draft.regions], severity: draft.severity, note: $("sym-note").value.trim(), createdAt: new Date().toISOString() });
+      draft.kinds.clear(); draft.regions.clear(); draft.severity = 2; $("sym-note").value = ""; $("sym-at").value = toLocalInput(new Date());
+      renderSymForm(); flash("sym-msg", "記録しました。右の一覧に「これかも」が付きます。");
+    } catch (err) { flash("sym-msg", "保存できませんでした。もう一度お試しください。"); }
+    finally { $("save-sym").disabled = false; }
+  });
+
+  // ---- timeline ----
+  let confirming = null;
+  function removeButtons(kind, id, ex) {
+    if (ex) return el("span", { class: "chip plain", text: "記入例" });
+    const key = kind + ":" + id;
+    if (confirming === key) return el("div", { class: "confirm" }, ["この記録を消しますか？",
+      el("button", { class: "btn danger", type: "button", text: "消す", onclick: async () => { confirming = null; try { await store.remove(kind, id); } catch (e) {} renderAll(); } }),
+      el("button", { class: "btn quiet", type: "button", text: "やめる", onclick: () => { confirming = null; renderAll(); } })]);
+    return el("button", { class: "btn quiet small", type: "button", text: "削除", onclick: () => { confirming = key; renderAll(); } });
+  }
+  function renderAll() {
+    const { m, s, d, ex } = data();
+    const results = {}; // symptom id -> suspects
+    for (const sym of s) results[sym.id] = suspects(sym, m, s);
+    const stats = lateStats(m, s);
+    // highest level each meal item reached
+    const mealMarks = {};
+    for (const list of Object.values(results)) for (const c of list) {
+      const k = c.mealId + "|" + c.item; mealMarks[k] = Math.max(mealMarks[k] || 0, c.level);
+    }
+
+    const box = $("log"); box.replaceChildren();
+    $("count").textContent = ex ? "" : `食事${m.length}件・症状${s.length}件`;
+    if (ex) box.append(el("p", { class: "empty small", text: "まだ記録がありません。左の欄から食事と症状を記録すると、ここに時刻順で並びます。下は記入例です。" }));
+    const events = [...m.map(x => ({ t: x.eatenAt, type: "meals", x })), ...s.map(x => ({ t: x.at, type: "symptoms", x }))].sort((a, b) => b.t.localeCompare(a.t));
+    for (const ev of events.slice(0, 300)) {
+      if (ev.type === "meals") {
+        const meal = ev.x;
+        box.append(el("article", { class: "card" + (ex ? " example" : "") }, [
+          el("div", { class: "card-top" }, [el("span", { class: "card-title", text: "食事" }), el("span", { class: "num small muted", text: fmt(meal.eatenAt) })]),
+          el("div", { class: "items" }, splitItems(meal.food).map(it => {
+            const f = fodmapOf(it); const lv = mealMarks[meal.id + "|" + it];
+            const late = Math.max(0, ...lateKeys(it).map(k => stats.per[k]?.level || 0));
+            return el("span", { class: "item" }, [f.foods[0] && PIC[f.foods[0]] ? el("span", { class: "e", text: PIC[f.foods[0]], "aria-hidden": "true" }) : null, it, f.risk ? el("span", { class: f.risk === "high" ? "chip hi" : "chip mid", text: (f.risk === "high" ? "高：" : "中：") + f.groups.map(groupName).join("・") }) : null, lv ? kamo(lv) : null, late ? lateMark(late) : null]);
+          })),
+          el("div", { class: "row" }, removeButtons("meals", meal.id, ex)),
+        ]));
+      } else {
+        const sym = ev.x; const list = results[sym.id]; const w = whereText(sym.regions);
+        box.append(el("article", { class: "card sym" + (ex ? " example" : "") }, [
+          el("div", { class: "card-top" }, [el("span", { class: "card-title", text: sym.kinds.map(kindLabel).join("・") + `（${SEV.find(x => x.k === sym.severity)?.label || ""}）` }), el("span", { class: "num small muted", text: fmt(sym.at) })]),
+          sym.regions?.length ? el("p", { class: "where" }, [el("b", { text: (w ? w[0] : "") + "　" }), sym.regions.map(regionLabel).join("・")]) : el("p", { class: "small muted", text: "場所の印なし" }),
+          sym.note ? el("p", { class: "small muted", text: sym.note }) : null,
+          ...(() => { const fl = dayFlags(dayDoc(d, dayOf(sym.at))); return fl.length ? [el("p", { class: "day-ctx" }, [...fl.map(f => el("span", { class: "chip day-chip", text: f })), el("span", { class: "small muted", text: "　この日は食べ物以外の影響もあるかも" })])] : []; })(),
+          el("div", {}, list.length ? list.map(c => el("div", { class: "cand" }, [kamo(c.level),
+            el("span", { class: "cand-name" }, [c.item, el("span", { class: "small muted", text: `　${fmt(c.eatenAt)}に食べた` })]),
+            el("span", { class: "why", text: c.why.join(" ／ ") })]))
+            : el("p", { class: "small muted", text: `前${WINDOW_H}時間に怪しい食品はありませんでした。` })),
+          ...(() => { const late = lateSuspects(sym, m, stats); return late.length ? [el("div", { class: "late-box" }, [
+            el("p", { class: "small late-head", text: "遅れて出ているかも（10〜48時間前に食べたもの）" }),
+            ...late.map(c => el("div", { class: "cand" }, [lateMark(c.level),
+              el("span", { class: "cand-name" }, [c.key, el("span", { class: "small muted", text: `　${c.item}・${Math.round(c.h)}時間前` })]),
+              el("span", { class: "why", text: lateWhy(c) })]))])] : []; })(),
+          el("div", { class: "row" }, removeButtons("symptoms", sym.id, ex)),
+        ]));
+      }
+    }
+    const top = renderRisk(results, ex, stats);
+    renderReport();
+    renderRel();
+    $("bubble").textContent =
+      ex ? "はじめまして！食べたものとお腹の症状を記録してね。怪しい食べ物を一緒に探すよ。"
+      : top && top.max >= 3 ? `いまいちばんの「これかも」は「${top.name}」。しばらく控えて、様子を見てみる？`
+      : top ? `「${top.name}」が少し怪しいかも。記録が増えるほど、もっと絞りこめるよ。`
+      : !s.length ? "記録ありがとう！お腹の調子が変わったら、症状も記録してね。"
+      : "今のところ怪しい食べ物は見つかっていないよ。この調子で記録を続けよう。";
+    renderPreview();
+  }
+
+  // ---- personal risk ranking ----
+  function renderRisk(results, ex, stats) {
+    const box = $("risk"); box.replaceChildren();
+    $("risk-note").textContent = ex ? "記入例" : "";
+    const agg = {};
+    for (const list of Object.values(results)) for (const c of list) {
+      const a = agg[c.key] || (agg[c.key] = { name: c.key.replace(/\+/g, "・"), sum: 0, max: 0, n: 0 });
+      a.sum += c.score; a.max = Math.max(a.max, c.level); a.n++;
+    }
+    const rows = Object.values(agg).sort((a, b) => b.max - a.max || b.sum - a.sum).slice(0, 10);
+    const late = Object.values(stats.per).filter(a => a.level).sort((a, b) => b.level - a.level || b.rate - a.rate).slice(0, 6);
+    const lateBlock = () => late.length ? el("div", { class: "late-box" }, [el("p", { class: "small late-head", text: "遅れて出るかも（10〜48時間後）" }),
+      ...late.map(a => el("div", { class: "risk-row" }, [lateMark(a.level), el("b", { text: a.key }), el("span", { class: "small muted num", text: `${a.hit}/${a.n}回` })]))]) : null;
+    if (!rows.length) { box.append(el("p", { class: "small muted", text: "症状を記録すると、怪しい順にここへ並びます。" })); const lb = lateBlock(); if (lb) box.append(lb); return null; }
+    for (const r of rows) box.append(el("div", { class: "risk-row" }, [kamo(r.max), el("b", { text: r.name }), el("span", { class: "small muted num", text: `${r.n}回` })]));
+    const lb = lateBlock(); if (lb) box.append(lb);
+    return rows[0];
+  }
+
+  // ---- reference ----
+  const refFilter = { risk: "all", cat: "all" };
+  function renderFilters() {
+    const mk = (label, on, tap, pic) => el("button", { type: "button", "aria-pressed": String(on), onclick: tap }, [pic ? el("span", { class: "e", text: pic }) : null, label]);
+    $("ref-filters").replaceChildren(
+      ...[["all", "すべて"], ["high", "高リスク"], ["mid", "中リスク"], ["other", "FODMAP以外"], ["loose", "下痢しやすい"]].map(([k, l]) => mk(l, refFilter.risk === k, () => { refFilter.risk = k; renderRef(); })),
+      el("span", { style: "width:100%;height:0" }),
+      mk("すべての分類", refFilter.cat === "all", () => { refFilter.cat = "all"; renderRef(); }),
+      ...CATS.map(c => mk(c.name, refFilter.cat === c.name, () => { refFilter.cat = c.name; renderRef(); }, CAT_PIC[c.name])));
+  }
+  function renderRef() {
+    renderFilters();
+    const q = $("ref-q").value.trim(); const box = $("ref-list"); box.replaceChildren();
+    for (const c of CATS) {
+      if (refFilter.cat !== "all" && refFilter.cat !== c.name) continue;
+      const foods = c.foods.filter(f => (!q || f.includes(q)) && (refFilter.risk === "all" || (refFilter.risk === "loose" ? fodmapOf(f).loose : (fodmapOf(f).risk || "other") === refFilter.risk))); if (!foods.length) continue;
+      box.append(el("div", { class: "group" }, [
+        el("div", { class: "cat-head" }, [el("span", { class: "cat-pic", text: CAT_PIC[c.name] || "", "aria-hidden": "true" }), el("h3", { text: c.name }), el("span", { class: "small muted num", text: `${foods.length}品` })]),
+        el("div", { class: "foods" }, foods.map(f => {
+          const fo = fodmapOf(f); const note = MID.find(x => x.f === f)?.note; const rk = fo.risk || "other";
+          return el("button", { type: "button", class: "tile " + rk, title: "タップで「食べたもの」に入れる", onclick: () => addFood(f) }, [
+            el("span", { class: "risk-tag " + rk, text: { high: "高", mid: "中", other: "注意" }[rk] }),
+            el("span", { class: "pic", text: PIC[f] || CAT_PIC[c.name] || "", "aria-hidden": "true" }),
+            el("span", { class: "fname", text: f }),
+            el("span", { class: "ftype", text: fo.groups.length ? fo.groups.map(groupName).join("・") + (note ? `（${note}）` : "") : "FODMAPではない" }),
+            ...fo.triggers.map(t => el("span", { class: "fat-tag", text: t.tag })),
+            fo.loose ? el("span", { class: "loose-tag", text: "下痢しやすい" }) : null,
+          ]);
+        })),
+      ]));
+    }
+    if (!box.children.length) box.append(el("p", { class: "small muted", text: "一致する食品はありません。" }));
+  }
+  // ---- food x time-after-eating relation table (0-48h) ----
+  const BUCKETS = [[0, 4, "0〜4時間", "小腸の目安"], [4, 10, "4〜10時間", "大腸の目安"], [10, 24, "10〜24時間", "遅れて"], [24, 48, "24〜48時間", "遅れて"]];
+  let relKind = "all";
+  function relStats(meals, symptoms, kind) {
+    const H = 3600000, now = Date.now();
+    const symT = symptoms.filter(x => kind === "all" || x.kinds.includes(kind)).map(x => new Date(x.at).getTime());
+    const blank = k => ({ key: k, n: 0, any: 0, b: BUCKETS.map(() => 0) });
+    const base = blank("ふだん（すべての食事）"), per = {};
+    for (const m of meals) {
+      const t = new Date(m.eatenAt).getTime();
+      const hits = BUCKETS.map(([lo, hi]) => symT.some(st => st - t >= lo * H && st - t < hi * H));
+      const any = hits.some(Boolean);
+      if (!any && now - t < 48 * H) continue; // too recent to know
+      const keys = new Set(splitItems(m.food).flatMap(it => [...lateKeys(it), ...fodmapOf(it).foods]));
+      for (const a of [base, ...[...keys].map(k => per[k] || (per[k] = blank(k)))]) {
+        a.n++; if (any) a.any++; hits.forEach((h, i) => { if (h) a.b[i]++; });
+      }
+    }
+    const br = base.n ? base.any / base.n : 0;
+    const rows = Object.values(per).filter(a => a.n >= 2).map(a => {
+      const rate = a.any / a.n, lift = rate - br;
+      a.level = a.any >= 4 && rate >= 0.6 && lift >= 0.35 ? 3 : a.any >= 3 && lift >= 0.25 ? 2 : a.any >= 2 && lift >= 0.15 ? 1 : 0;
+      a.lift = lift; return a;
+    }).sort((a, b) => b.level - a.level || b.lift - a.lift || b.n - a.n);
+    return { base, rows };
+  }
+  function dayCondStats(d, symptoms, kind) {
+    const symDays = new Set(symptoms.filter(x => kind === "all" || x.kinds.includes(kind)).map(x => dayOf(x.at)));
+    const base = { n: 0, hit: 0 }, per = {};
+    for (const doc of d) {
+      const hit = symDays.has(doc.date); base.n++; if (hit) base.hit++;
+      for (const f of dayFlags(doc)) { const a = per[f] || (per[f] = { key: f, n: 0, hit: 0 }); a.n++; if (hit) a.hit++; }
+    }
+    return { base, rows: FLAGS.map(f => per[f]).filter(Boolean) };
+  }
+  const relMark = lv => el("span", { class: "kamo rel l" + lv }, [el("span", { class: "dots", text: "●".repeat(lv) + "○".repeat(3 - lv) }), "関係？"]);
+  function renderRel() {
+    const { m, s, ex } = data();
+    $("rel-kind").replaceChildren(...[["all", "すべての症状"], ...KINDS.map(k => [k.k, k.label])].map(([k, l]) =>
+      el("button", { type: "button", "aria-pressed": String(relKind === k), onclick: () => { relKind = k; renderRel(); } }, l)));
+    const { base, rows } = relStats(m, s, relKind);
+    const box = $("rel-table"); box.replaceChildren();
+    if (!base.n) { box.append(el("p", { class: "small muted", text: "食べてから48時間たった食事が増えると、ここに表が出ます。" })); return; }
+    const pct = (x, n) => n ? Math.round(x / n * 100) : 0;
+    const cell = (x, n, ref) => { const v = pct(x, n); const hot = Math.max(0, Math.min(1, (v - ref) / 60));
+      return el("td", { class: "heat num", style: `background: color-mix(in srgb, var(--mark) ${Math.round(hot * 70)}%, transparent);${hot > .55 ? "color: var(--surface);font-weight:700" : ""}` }, `${v}%`); };
+    const refB = BUCKETS.map((_, i) => pct(base.b[i], base.n)), refAny = pct(base.any, base.n);
+    const head = el("tr", {}, [el("th", { text: "食品" }), el("th", { text: "食べた回数" }),
+      ...BUCKETS.map(([, , l, sub]) => el("th", {}, [l, el("br"), el("span", { class: "muted", text: sub })])), el("th", { text: "0〜48時間" }), el("th", { text: "関係" })]);
+    const row = (a, isBase) => el("tr", { class: isBase ? "base-row" : null }, [el("td", { text: a.key }), el("td", { class: "num", text: `${a.n}回` }),
+      ...a.b.map((x, i) => isBase ? el("td", { class: "num", text: `${pct(x, a.n)}%` }) : cell(x, a.n, refB[i])),
+      isBase ? el("td", { class: "num", text: `${pct(a.any, a.n)}%` }) : cell(a.any, a.n, refAny),
+      el("td", {}, isBase ? "" : a.level ? relMark(a.level) : el("span", { class: "small muted", text: "—" }))]);
+    box.append(el("table", { class: "rel" }, [el("thead", {}, head), el("tbody", {}, [row(base, true), ...rows.slice(0, 40).map(a => row(a))])]));
+    const dc = dayCondStats(data().d || [], s, relKind);
+    box.append(el("h3", { text: "体調と症状の関係", style: "margin-top:18px" }), el("p", { class: "small muted", text: "体調メモを付けた日のうち、その日に症状が出た割合です。" }));
+    if (!dc.base.n) box.append(el("p", { class: "small muted", text: "体調メモを付けると、ここに出ます。" }));
+    else box.append(el("table", { class: "rel" }, [el("thead", {}, el("tr", {}, [el("th", { text: "体調" }), el("th", { text: "日数" }), el("th", { text: "症状が出た日" })])),
+      el("tbody", {}, [el("tr", { class: "base-row" }, [el("td", { text: "メモを付けた日すべて" }), el("td", { class: "num", text: `${dc.base.n}日` }), el("td", { class: "num", text: `${pct(dc.base.hit, dc.base.n)}%` })]),
+        ...dc.rows.map(a => el("tr", {}, [el("td", { text: a.key }), el("td", { class: "num", text: `${a.n}日` }), cell(a.hit, a.n, pct(dc.base.hit, dc.base.n))]))])]));
+    if (!rows.length) box.append(el("p", { class: "small muted", text: "2回以上食べた食品がまだありません。" }));
+    if (ex) box.prepend(el("p", {}, el("span", { class: "chip plain", text: "記入例" })));
+  }
+
+  // ---- coach report ----
+  const RANGES = [[7, "直近7日"], [14, "直近14日"], [30, "直近30日"], [0, "すべて"]];
+  let reportDays = 14, reportText = "", reportCsv = "", reportName = "";
+  const WD = "日月火水木金土";
+  const dayLabel = d => `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]})`;
+  const ymd = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+  const hm = s => { const d = new Date(s); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const csvCell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const dots = lv => "●".repeat(lv) + "○".repeat(3 - lv);
+  function buildReport() {
+    const { m, s, ex } = data();
+    const now = new Date();
+    const from = reportDays ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - reportDays + 1) : null;
+    const inRange = t => !from || new Date(t) >= from;
+    const meals = m.filter(x => inRange(x.eatenAt)), syms = s.filter(x => inRange(x.at));
+    const results = {}; for (const sym of syms) results[sym.id] = suspects(sym, m, s);
+    const stats = lateStats(m, s); const late = Object.values(stats.per).filter(a => a.level).sort((a, b) => b.level - a.level || b.rate - a.rate).slice(0, 8);
+    const times = [...meals.map(x => x.eatenAt), ...syms.map(x => x.at)].sort();
+    const start = from || (times[0] ? new Date(times[0]) : now);
+    const kindCount = {}; for (const sym of syms) for (const k of sym.kinds) kindCount[k] = (kindCount[k] || 0) + 1;
+    const symDays = new Set(syms.map(x => x.at.slice(0, 10))).size;
+    const loc = { small: 0, large: 0 }; for (const sym of syms) { const l = locationOf(sym.regions); if (l) loc[l]++; }
+    const agg = {};
+    for (const list of Object.values(results)) for (const c of list) {
+      const a = agg[c.key] || (agg[c.key] = { name: c.key.replace(/\+/g, "・"), max: 0, n: 0, sum: 0 });
+      a.max = Math.max(a.max, c.level); a.n++; a.sum += c.score;
+    }
+    const risky = Object.values(agg).sort((a, b) => b.max - a.max || b.sum - a.sum).slice(0, 10);
+    const hiCount = {};
+    for (const x of meals) for (const it of splitItems(x.food)) { const f = fodmapOf(it); if (f.risk === "high") for (const n of f.foods) hiCount[n] = (hiCount[n] || 0) + 1; }
+    const hiTop = Object.entries(hiCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const events = [...meals.map(x => ({ t: x.eatenAt, type: "meal", x })), ...syms.map(x => ({ t: x.at, type: "sym", x }))].sort((a, b) => a.t.localeCompare(b.t));
+    const kindText = KINDS.filter(k => kindCount[k.k]).map(k => `${k.label}${kindCount[k.k]}`).join("・") || "なし";
+    return { ex, start, end: now, meals, syms, results, kindText, symDays, loc, risky, hiTop, events, late, d: (data().d || []), dc: dayCondStats(data().d || [], s, "all") };
+  }
+  function renderReport() {
+    const r = buildReport();
+    const { m: m_all, s: s_all } = data(); const stats_all = lateStats(m_all, s_all);
+    const period = `${dayLabel(r.start)}〜${dayLabel(r.end)}`;
+    $("report-range").replaceChildren(...RANGES.map(([d, l]) => el("button", { type: "button", "aria-pressed": String(reportDays === d), onclick: () => { reportDays = d; renderReport(); } }, l)));
+    const box = $("report"); box.replaceChildren();
+    // text version (for LINE / mail)
+    const T = [];
+    T.push(`【カンガルーみさみさのおなかダイアリー】${r.ex ? "（記入例）" : ""}`);
+    T.push(`期間：${period}`);
+    T.push(`食事 ${r.meals.length}件／症状 ${r.syms.length}回（${r.kindText}）／症状のあった日 ${r.symDays}日`);
+    T.push(`症状の場所：大腸の目安 ${r.loc.large}回・小腸の目安 ${r.loc.small}回`);
+    T.push("", "■ 要注意食品（これかも）");
+    if (r.risky.length) r.risky.forEach(x => T.push(`${dots(x.max)} ${x.name}（${x.n}回）`)); else T.push("なし");
+    T.push("", "■ 遅れて出るかも（食べて10〜48時間後に症状が出やすい・これまでの全記録から）");
+    if (r.late.length) r.late.forEach(a => T.push(`${dots(a.level)} ${a.key}（食べた${a.n}回のうち${a.hit}回）`)); else T.push("なし");
+    const rel = relStats(data().m, data().s, "all").rows.filter(a => a.level).slice(0, 8);
+    T.push("", "■ 食品と症状の関係（食べて0〜48時間・これまでの全記録から）");
+    if (rel.length) rel.forEach(a => T.push(`${dots(a.level)} ${a.key}：食べた${a.n}回のうち${a.any}回 症状（${BUCKETS.map(([, , l], i) => `${l} ${a.b[i]}回`).join("・")}）`)); else T.push("なし");
+    T.push("", "■ 体調と症状（体調メモを付けた日のうち、症状が出た日の割合）");
+    if (r.dc.base.n) { T.push(`メモを付けた日すべて：${r.dc.base.n}日中${r.dc.base.hit}日`); r.dc.rows.forEach(a => T.push(`${a.key}の日：${a.n}日中${a.hit}日`)); } else T.push("体調メモなし");
+    T.push("", "■ よく食べた高FODMAP食品");
+    T.push(r.hiTop.length ? r.hiTop.map(([n, c]) => `${n} ${c}回`).join("、") : "なし");
+    T.push("", "■ 日ごとの記録");
+    let lastDay = "";
+    for (const ev of r.events) {
+      const dl = dayLabel(new Date(ev.t)); if (dl !== lastDay) { const fl = dayFlags(dayDoc(r.d, dayOf(ev.t))); const nt = dayDoc(r.d, dayOf(ev.t))?.note; T.push(dl + (fl.length ? `［${fl.join("・")}］` : "") + (nt ? ` ${nt}` : "")); lastDay = dl; }
+      if (ev.type === "meal") T.push(` ${hm(ev.t)} 食事：${ev.x.food}`);
+      else {
+        const sym = ev.x; const w = whereText(sym.regions); const list = r.results[sym.id].slice(0, 3);
+        T.push(` ${hm(ev.t)} 症状：${sym.kinds.map(kindLabel).join("・")}（${SEV.find(x => x.k === sym.severity)?.label || ""}）${sym.regions?.length ? " " + sym.regions.map(regionLabel).join("・") + (w ? `［${w[0]}の目安］` : "") : ""}`);
+        if (list.length) T.push(`   これかも：${list.map(c => `${dots(c.level)}${c.item}`).join("、")}`);
+        if (sym.note) T.push(`   メモ：${sym.note}`);
+      }
+    }
+    if (!r.events.length) T.push("この期間の記録はありません");
+    reportText = T.join("\n");
+    // csv version (for spreadsheets)
+    const rows = [["日付", "時刻", "種類", "内容", "FODMAP", "そのほかの注意", "症状の場所", "小腸・大腸の目安", "強さ", "これかも（怪しい順）", "遅れて出るかも（10〜48時間前）", "その日の体調", "メモ"]];
+    for (const ev of r.events) {
+      const d = new Date(ev.t); const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+      if (ev.type === "meal") {
+        const its = splitItems(ev.x.food).map(it => [it, fodmapOf(it)]);
+        rows.push([date, hm(ev.t), "食事", ev.x.food,
+          its.filter(([, f]) => f.risk === "high" || f.risk === "mid").map(([it, f]) => `${it}:${f.risk === "high" ? "高" : "中"}(${f.groups.map(groupName).join("・")})`).join(" / "),
+          its.filter(([, f]) => f.triggers.length).map(([it, f]) => `${it}:${f.triggers.map(t => t.tag).join("・")}`).join(" / "), "", "", "", "", "", "", dayFlags(dayDoc(r.d, dayOf(ev.t))).join("・")]);
+      } else {
+        const sym = ev.x; const w = whereText(sym.regions);
+        rows.push([date, hm(ev.t), "症状", sym.kinds.map(kindLabel).join("・"), "", "", (sym.regions || []).map(regionLabel).join("・"), w ? w[0] : "",
+          SEV.find(x => x.k === sym.severity)?.label || "", r.results[sym.id].map(c => `${dots(c.level)}${c.item}`).join(" / "),
+          lateSuspects(sym, m_all, stats_all).map(c => `${dots(c.level)}${c.key}`).join(" / "), dayFlags(dayDoc(r.d, dayOf(ev.t))).join("・"), sym.note || ""]);
+      }
+    }
+    reportCsv = "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
+    reportName = `おなかダイアリー_${ymd(r.start)}-${ymd(r.end)}`;
+    $("report-fallback").value = reportText;
+    for (const id of ["dl-csv", "dl-txt", "copy-txt"]) $(id).disabled = r.ex;
+    // on-screen sheet
+    box.append(
+      el("div", { class: "row", style: "justify-content:space-between" }, [el("h3", { text: `${period}のまとめ` }), r.ex ? el("span", { class: "chip plain", text: "記入例" }) : null]),
+      el("div", { class: "stats" }, [
+        el("div", { class: "stat" }, [el("b", { text: String(r.meals.length) }), el("span", { text: "食事の記録" })]),
+        el("div", { class: "stat" }, [el("b", { text: String(r.syms.length) }), el("span", { text: `症状（${r.kindText}）` })]),
+        el("div", { class: "stat" }, [el("b", { text: String(r.symDays) }), el("span", { text: "症状のあった日" })]),
+        el("div", { class: "stat" }, [el("b", { text: `${r.loc.large}:${r.loc.small}` }), el("span", { text: "大腸：小腸の目安" })]),
+      ]),
+      el("div", { class: "group" }, [el("h3", { text: "要注意食品（これかも）" }),
+        r.risky.length ? el("div", { class: "risk" }, r.risky.map(x => el("div", { class: "risk-row" }, [kamo(x.max), el("b", { text: x.name }), el("span", { class: "small muted num", text: `${x.n}回` })])))
+          : el("p", { class: "small muted", text: "この期間はありません。" })]),
+      el("div", { class: "group" }, [el("h3", { text: "遅れて出るかも（10〜48時間後）" }),
+        el("p", { class: "small muted", text: "これまでの全記録から見た傾向です。" }),
+        r.late.length ? el("div", { class: "risk" }, r.late.map(a => el("div", { class: "risk-row" }, [lateMark(a.level), el("b", { text: a.key }), el("span", { class: "small muted num", text: `${a.hit}/${a.n}回` })])))
+          : el("p", { class: "small muted", text: "今のところ見つかっていません。" })]),
+      el("div", { class: "group" }, [el("h3", { text: "よく食べた高FODMAP食品" }),
+        el("p", { class: "small", text: r.hiTop.length ? r.hiTop.map(([n, c]) => `${n} ${c}回`).join("、") : "この期間はありません。" })]),
+      el("div", { class: "group" }, [el("h3", { text: "日ごとの記録" }), ...dayBlocks(r)]),
+    );
+  }
+  function dayBlocks(r) {
+    if (!r.events.length) return [el("p", { class: "small muted", text: "この期間の記録はありません。" })];
+    const out = []; let cur = null, lastDay = "";
+    for (const ev of r.events) {
+      const dl = dayLabel(new Date(ev.t));
+      if (dl !== lastDay) { const fl = dayFlags(dayDoc(r.d, dayOf(ev.t))); const nt = dayDoc(r.d, dayOf(ev.t))?.note; cur = el("div", { class: "day" }, el("span", { class: "day-head" }, [dl, ...fl.map(f => el("span", { class: "chip day-chip", text: f })), nt ? el("span", { class: "small muted", text: " " + nt }) : null])); out.push(cur); lastDay = dl; }
+      if (ev.type === "meal") cur.append(el("div", { class: "ev" }, [el("span", { class: "num", text: hm(ev.t) }), el("span", { text: ev.x.food })]));
+      else {
+        const sym = ev.x; const list = r.results[sym.id].slice(0, 3);
+        cur.append(el("div", { class: "ev sym" }, [el("span", { class: "num", text: hm(ev.t) }),
+          el("b", { text: `${sym.kinds.map(kindLabel).join("・")}（${SEV.find(x => x.k === sym.severity)?.label || ""}）${sym.regions?.length ? " " + sym.regions.map(regionLabel).join("・") : ""}` }),
+          list.length ? el("span", { class: "sub", text: "これかも：" + list.map(c => `${dots(c.level)}${c.item}`).join("、") }) : null,
+          sym.note ? el("span", { class: "sub", text: "メモ：" + sym.note }) : null]));
+      }
+    }
+    return out;
+  }
+  let downloads = null;
+  async function saveFile(ext, body) {
+    if (!downloads) return;
+    try {
+      const res = await downloads.save({ filename: `${reportName}.${ext}`, data: body });
+      flash("report-msg", res.status === "saved" ? "保存しました" : "送りました");
+    } catch (e) {
+      const c = e?.code;
+      flash("report-msg", c === "declined" ? "保存をやめました" : c === "rate_limited" ? "少し待ってからもう一度押してください" : "この画面では保存できません。文章をコピーしてください");
+      if (["unavailable", "not_granted", "capability_disabled", "capability_removed"].includes(c)) { $("dl-csv").hidden = true; $("dl-txt").hidden = true; }
+    }
+  }
+  $("dl-csv").addEventListener("click", () => saveFile("csv", reportCsv));
+  $("dl-txt").addEventListener("click", () => saveFile("txt", reportText));
+  $("copy-txt").addEventListener("click", () => {
+    const done = () => flash("report-msg", "コピーしました。LINEやメールに貼り付けてください");
+    const fallback = () => { const ta = $("report-fallback"); ta.classList.remove("sr"); ta.style.cssText = "width:100%;min-height:200px"; ta.removeAttribute("aria-hidden"); ta.focus(); ta.select(); flash("report-msg", "下の文章を長押し（またはCtrl+C）でコピーしてください"); };
+    try { navigator.clipboard.writeText(reportText).then(done, fallback); } catch (e) { fallback(); }
+  });
+  (async () => { try { downloads = window.claude?.use ? await window.claude.use("downloads") : null; } catch (e) { downloads = null; } if (downloads) { $("dl-csv").hidden = false; $("dl-txt").hidden = false; } })();
+
+  function renderSupps() {
+    const box = $("supp-list"); box.replaceChildren();
+    for (const c of SUPPS) {
+      box.append(el("div", { class: "group" }, [
+        el("div", { class: "cat-head" }, [el("span", { class: "cat-pic", text: c.pic, "aria-hidden": "true" }), el("h3", { text: c.cat })]),
+        el("div", { class: "supp-grid" }, c.items.map(s => {
+          const fo = fodmapOf(s.f); const rk = fo.risk || "other";
+          return el("button", { type: "button", class: "supp " + rk, title: "タップで記録欄に入れる", onclick: () => addFood(s.f) }, [
+            el("span", { class: "pic", text: s.pic, "aria-hidden": "true" }),
+            el("span", { class: "supp-body" }, [
+              el("span", { class: "row" }, [el("span", { class: "risk-tag " + rk, text: { high: "高", mid: "中", low: "低", other: "注意" }[rk] }), el("b", { text: s.f })]),
+              el("span", { class: "small", text: s.text }),
+              el("span", { class: "chips" }, [...fo.triggers.map(t => el("span", { class: "fat-tag", text: t.tag })), fo.loose ? el("span", { class: "loose-tag", text: "下痢しやすい" }) : null]),
+            ]),
+          ]);
+        })),
+      ]));
+    }
+  }
+  function addFood(f) { const inp = $("food"); inp.value = inp.value.trim() ? inp.value.trim() + "、" + f : f; renderDetect(); show("log"); inp.focus(); }
+  $("ref-q").addEventListener("input", renderRef);
+  function show(v) {
+    for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.view === v));
+    $("view-log").hidden = v !== "log"; $("view-ref").hidden = v !== "ref"; $("view-supp").hidden = v !== "supp"; $("view-report").hidden = v !== "report"; $("view-rel").hidden = v !== "rel";
+  }
+  for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => show(b.dataset.view));
+
+  renderRef(); renderSupps(); renderSymForm(); renderDayForm(); renderAll(); init();
+})();
+</script>
+
+</body>
+</html>
