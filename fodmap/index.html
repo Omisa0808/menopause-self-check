@@ -100,7 +100,7 @@ header { display: grid; gap: 6px; }
 
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
 label { font-size: .85rem; font-weight: 500; color: var(--muted); display: grid; gap: 4px; }
-input[type="text"], input[type="datetime-local"], input[type="search"], textarea {
+input[type="text"], input[type="datetime-local"], input[type="date"], input[type="search"], textarea {
   font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; width: 100%;
 }
 textarea { min-height: 56px; resize: vertical; }
@@ -131,6 +131,12 @@ table.rel td, table.rel th { text-align: center; white-space: nowrap; }
 table.rel td:first-child, table.rel th:first-child { text-align: left; white-space: normal; min-width: 7em; font-weight: 700; position: sticky; left: 0; background: var(--surface); z-index: 1; }
 table.rel .base-row td { background: var(--accent-soft); color: var(--title); font-weight: 700; }
 td.heat { border-left: 2px solid var(--surface); }
+.day-q { display: grid; grid-template-columns: 5em minmax(0, 1fr); gap: 8px; align-items: center; }
+.day-q-label { font-weight: 700; font-size: .9rem; }
+.day-q .toggle button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+.chip.day-chip { background: var(--sky); color: var(--sky-ink); margin-left: 6px; }
+.day-ctx { font-size: .85rem; }
+.day-ctx .chip.day-chip:first-child { margin-left: 0; }
 .kamo.late { background: var(--accent-soft); color: var(--title); border: 1px dashed var(--accent); }
 .kamo.late.l3 { background: var(--accent); color: var(--surface); border-style: solid; }
 .late-box { border-top: 1px dashed var(--accent); padding-top: 6px; margin-top: 4px; display: grid; gap: 2px; }
@@ -261,6 +267,21 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
 
   <section id="view-log" class="cols">
     <div class="stack">
+      <form class="panel" id="day-form" autocomplete="off" onsubmit="return false">
+        <div class="row" style="justify-content:space-between">
+          <h2>今日の体調メモ</h2>
+          <span class="small muted" id="day-state"></span>
+        </div>
+        <label for="day-date">日付
+          <input type="date" id="day-date">
+        </label>
+        <div id="day-qs" class="group"></div>
+        <label for="day-note">ひとことメモ（任意）
+          <input type="text" id="day-note" placeholder="例：冷えた、運動した、外食続き">
+        </label>
+        <p class="small muted">タップするとすぐ保存されます。もう一度タップで取り消し。<span id="day-msg"></span></p>
+      </form>
+
       <form class="panel" id="meal-form" autocomplete="off">
         <h2>食べたものを記録</h2>
         <label for="food">食べたもの・飲んだもの（サプリや薬も。「、」で区切ると1品ずつ判定します）
@@ -653,15 +674,16 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   }
 
   // ---- storage: db (private per person) or this browser as fallback ----
-  let meals = [], symptoms = [], store = null, exampleMode = false;
+  let meals = [], symptoms = [], days = [], store = null, exampleMode = false;
   function localStore() {
     const read = name => { try { return JSON.parse(localStorage.getItem("fodmap-" + name) || "[]"); } catch (e) { return []; } };
-    const mem = { meals: read("meals"), symptoms: read("symptoms") }; const cbs = {};
+    const mem = { meals: read("meals"), symptoms: read("symptoms"), days: read("days") }; const cbs = {};
     const persist = name => { try { localStorage.setItem("fodmap-" + name, JSON.stringify(mem[name])); } catch (e) {} cbs[name]?.(mem[name].slice()); };
     return {
       subscribe(name, f) { cbs[name] = f; f(mem[name].slice()); },
       async add(name, d) { mem[name].push({ ...d, id: name[0] + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }); persist(name); },
       async remove(name, id) { mem[name] = mem[name].filter(x => x.id !== id); persist(name); },
+      async put(name, id, d) { mem[name] = [...mem[name].filter(x => x.id !== id), { ...d, id }]; persist(name); },
     };
   }
   function dbStore(db, uid) {
@@ -674,6 +696,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       },
       add: (name, d) => root.collection(name).add(d),
       remove: (name, id) => root.collection(name).doc(id).delete(),
+      put: (name, id, d) => root.collection(name).doc(id).set(d),
     };
   }
   function setStatus(t, local) { const s = $("status"); s.textContent = t; s.classList.toggle("local", !!local); }
@@ -691,6 +714,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     else { store = localStore(); setStatus("このブラウザだけに保存しています（別の端末とは共有されません）。", true); }
     store.subscribe("meals", list => { meals = list.filter(m => m.food && m.eatenAt); renderAll(); });
     store.subscribe("symptoms", list => { symptoms = list.filter(s => s.at); renderAll(); });
+    store.subscribe("days", list => { days = list.filter(x => x.date); renderDayForm(); renderAll(); });
   }
 
   // ---- time helpers ----
@@ -721,9 +745,42 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       { id: "ex3", food: "おにぎり、味噌汁", eatenAt: toLocalInput(new Date(now - 22 * H)) },
     ];
     const s = [{ id: "exs1", at: toLocalInput(new Date(now - 100 * H)), kinds: ["pain", "diarrhea"], regions: ["lm", "ll"], severity: 2 }, { id: "exs0", at: toLocalInput(new Date(now - 44 * H)), kinds: ["gas"], regions: ["ml", "ll"], severity: 1 }, { id: "exs", at: toLocalInput(new Date(now - 19 * H)), kinds: ["gas", "pain"], regions: ["lm", "ll", "ml"], severity: 2 }];
-    return { m, s };
+    const day = h => toLocalInput(new Date(now - h * H)).slice(0, 10);
+    const d = [
+      { date: day(170), sleep: 1, stress: 1, period: 0 }, { date: day(122), sleep: 2, stress: 2, period: 0 },
+      { date: day(100), sleep: 3, stress: 3, period: 1 }, { date: day(68), sleep: 2, stress: 1, period: 1 },
+      { date: day(44), sleep: 3, stress: 2, period: 2 }, { date: day(19), sleep: 3, stress: 3, period: 2 },
+    ].map(x => ({ ...x, id: x.date }));
+    return { m, s, d };
   }
-  const data = () => (meals.length || symptoms.length) ? { m: meals, s: symptoms, ex: false } : { ...exampleData(), ex: true };
+  const data = () => (meals.length || symptoms.length || days.length) ? { m: meals, s: symptoms, d: days, ex: false } : { ...exampleData(), ex: true };
+
+  // ---- today's condition memo ----
+  const DAYQ = [
+    { k: "sleep", label: "睡眠", opts: [[1, "よく眠れた"], [2, "ふつう"], [3, "寝不足"]], flag: { 3: "寝不足" } },
+    { k: "stress", label: "ストレス", opts: [[1, "少ない"], [2, "ふつう"], [3, "多い"]], flag: { 3: "ストレス多め" } },
+    { k: "period", label: "生理", opts: [[0, "なし"], [1, "生理前"], [2, "生理中"]], flag: { 1: "生理前", 2: "生理中" } },
+  ];
+  const FLAGS = DAYQ.flatMap(q => Object.values(q.flag));
+  const dayOf = t => String(t).slice(0, 10);
+  const dayDoc = (d, date) => d.find(x => x.date === date);
+  const dayFlags = doc => doc ? DAYQ.map(q => q.flag[doc[q.k]]).filter(Boolean) : [];
+  $("day-date").value = toLocalInput(new Date()).slice(0, 10);
+  function renderDayForm() {
+    const date = $("day-date").value; const doc = days.find(x => x.date === date) || {};
+    $("day-qs").replaceChildren(...DAYQ.map(q => el("div", { class: "day-q" }, [el("span", { class: "day-q-label", text: q.label }),
+      el("div", { class: "toggle" }, q.opts.map(([v, l]) => el("button", { type: "button", "aria-pressed": String(doc[q.k] === v), onclick: () => saveDay({ [q.k]: doc[q.k] === v ? null : v }) }, l)))])));
+    if (document.activeElement !== $("day-note")) $("day-note").value = doc.note || "";
+    $("day-state").textContent = days.some(x => x.date === date) ? "この日のメモは保存済み" : "";
+  }
+  async function saveDay(patch) {
+    if (!store) return;
+    const date = $("day-date").value; if (!date) return;
+    const doc = { ...(days.find(x => x.date === date) || {}), ...patch, date }; delete doc.id;
+    try { await store.put("days", date, doc); flash("day-msg", "保存しました"); } catch (e) { flash("day-msg", "保存できませんでした。もう一度お試しください。"); }
+  }
+  $("day-date").addEventListener("input", renderDayForm);
+  $("day-note").addEventListener("change", () => { const doc = days.find(x => x.date === $("day-date").value) || {}; if (($("day-note").value.trim()) !== (doc.note || "")) saveDay({ note: $("day-note").value.trim() }); });
 
   // ---- meal form ----
   function renderDetect() {
@@ -809,7 +866,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     return el("button", { class: "btn quiet small", type: "button", text: "削除", onclick: () => { confirming = key; renderAll(); } });
   }
   function renderAll() {
-    const { m, s, ex } = data();
+    const { m, s, d, ex } = data();
     const results = {}; // symptom id -> suspects
     for (const sym of s) results[sym.id] = suspects(sym, m, s);
     const stats = lateStats(m, s);
@@ -841,6 +898,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
           el("div", { class: "card-top" }, [el("span", { class: "card-title", text: sym.kinds.map(kindLabel).join("・") + `（${SEV.find(x => x.k === sym.severity)?.label || ""}）` }), el("span", { class: "num small muted", text: fmt(sym.at) })]),
           sym.regions?.length ? el("p", { class: "where" }, [el("b", { text: (w ? w[0] : "") + "　" }), sym.regions.map(regionLabel).join("・")]) : el("p", { class: "small muted", text: "場所の印なし" }),
           sym.note ? el("p", { class: "small muted", text: sym.note }) : null,
+          ...(() => { const fl = dayFlags(dayDoc(d, dayOf(sym.at))); return fl.length ? [el("p", { class: "day-ctx" }, [...fl.map(f => el("span", { class: "chip day-chip", text: f })), el("span", { class: "small muted", text: "　この日は食べ物以外の影響もあるかも" })])] : []; })(),
           el("div", {}, list.length ? list.map(c => el("div", { class: "cand" }, [kamo(c.level),
             el("span", { class: "cand-name" }, [c.item, el("span", { class: "small muted", text: `　${fmt(c.eatenAt)}に食べた` })]),
             el("span", { class: "why", text: c.why.join(" ／ ") })]))
@@ -944,6 +1002,15 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     }).sort((a, b) => b.level - a.level || b.lift - a.lift || b.n - a.n);
     return { base, rows };
   }
+  function dayCondStats(d, symptoms, kind) {
+    const symDays = new Set(symptoms.filter(x => kind === "all" || x.kinds.includes(kind)).map(x => dayOf(x.at)));
+    const base = { n: 0, hit: 0 }, per = {};
+    for (const doc of d) {
+      const hit = symDays.has(doc.date); base.n++; if (hit) base.hit++;
+      for (const f of dayFlags(doc)) { const a = per[f] || (per[f] = { key: f, n: 0, hit: 0 }); a.n++; if (hit) a.hit++; }
+    }
+    return { base, rows: FLAGS.map(f => per[f]).filter(Boolean) };
+  }
   const relMark = lv => el("span", { class: "kamo rel l" + lv }, [el("span", { class: "dots", text: "●".repeat(lv) + "○".repeat(3 - lv) }), "関係？"]);
   function renderRel() {
     const { m, s, ex } = data();
@@ -963,6 +1030,12 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       isBase ? el("td", { class: "num", text: `${pct(a.any, a.n)}%` }) : cell(a.any, a.n, refAny),
       el("td", {}, isBase ? "" : a.level ? relMark(a.level) : el("span", { class: "small muted", text: "—" }))]);
     box.append(el("table", { class: "rel" }, [el("thead", {}, head), el("tbody", {}, [row(base, true), ...rows.slice(0, 40).map(a => row(a))])]));
+    const dc = dayCondStats(data().d || [], s, relKind);
+    box.append(el("h3", { text: "体調と症状の関係", style: "margin-top:18px" }), el("p", { class: "small muted", text: "体調メモを付けた日のうち、その日に症状が出た割合です。" }));
+    if (!dc.base.n) box.append(el("p", { class: "small muted", text: "体調メモを付けると、ここに出ます。" }));
+    else box.append(el("table", { class: "rel" }, [el("thead", {}, el("tr", {}, [el("th", { text: "体調" }), el("th", { text: "日数" }), el("th", { text: "症状が出た日" })])),
+      el("tbody", {}, [el("tr", { class: "base-row" }, [el("td", { text: "メモを付けた日すべて" }), el("td", { class: "num", text: `${dc.base.n}日` }), el("td", { class: "num", text: `${pct(dc.base.hit, dc.base.n)}%` })]),
+        ...dc.rows.map(a => el("tr", {}, [el("td", { text: a.key }), el("td", { class: "num", text: `${a.n}日` }), cell(a.hit, a.n, pct(dc.base.hit, dc.base.n))]))])]));
     if (!rows.length) box.append(el("p", { class: "small muted", text: "2回以上食べた食品がまだありません。" }));
     if (ex) box.prepend(el("p", {}, el("span", { class: "chip plain", text: "記入例" })));
   }
@@ -1000,7 +1073,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const hiTop = Object.entries(hiCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
     const events = [...meals.map(x => ({ t: x.eatenAt, type: "meal", x })), ...syms.map(x => ({ t: x.at, type: "sym", x }))].sort((a, b) => a.t.localeCompare(b.t));
     const kindText = KINDS.filter(k => kindCount[k.k]).map(k => `${k.label}${kindCount[k.k]}`).join("・") || "なし";
-    return { ex, start, end: now, meals, syms, results, kindText, symDays, loc, risky, hiTop, events, late };
+    return { ex, start, end: now, meals, syms, results, kindText, symDays, loc, risky, hiTop, events, late, d: (data().d || []), dc: dayCondStats(data().d || [], s, "all") };
   }
   function renderReport() {
     const r = buildReport();
@@ -1021,12 +1094,14 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const rel = relStats(data().m, data().s, "all").rows.filter(a => a.level).slice(0, 8);
     T.push("", "■ 食品と症状の関係（食べて0〜48時間・これまでの全記録から）");
     if (rel.length) rel.forEach(a => T.push(`${dots(a.level)} ${a.key}：食べた${a.n}回のうち${a.any}回 症状（${BUCKETS.map(([, , l], i) => `${l} ${a.b[i]}回`).join("・")}）`)); else T.push("なし");
+    T.push("", "■ 体調と症状（体調メモを付けた日のうち、症状が出た日の割合）");
+    if (r.dc.base.n) { T.push(`メモを付けた日すべて：${r.dc.base.n}日中${r.dc.base.hit}日`); r.dc.rows.forEach(a => T.push(`${a.key}の日：${a.n}日中${a.hit}日`)); } else T.push("体調メモなし");
     T.push("", "■ よく食べた高FODMAP食品");
     T.push(r.hiTop.length ? r.hiTop.map(([n, c]) => `${n} ${c}回`).join("、") : "なし");
     T.push("", "■ 日ごとの記録");
     let lastDay = "";
     for (const ev of r.events) {
-      const dl = dayLabel(new Date(ev.t)); if (dl !== lastDay) { T.push(dl); lastDay = dl; }
+      const dl = dayLabel(new Date(ev.t)); if (dl !== lastDay) { const fl = dayFlags(dayDoc(r.d, dayOf(ev.t))); const nt = dayDoc(r.d, dayOf(ev.t))?.note; T.push(dl + (fl.length ? `［${fl.join("・")}］` : "") + (nt ? ` ${nt}` : "")); lastDay = dl; }
       if (ev.type === "meal") T.push(` ${hm(ev.t)} 食事：${ev.x.food}`);
       else {
         const sym = ev.x; const w = whereText(sym.regions); const list = r.results[sym.id].slice(0, 3);
@@ -1038,19 +1113,19 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     if (!r.events.length) T.push("この期間の記録はありません");
     reportText = T.join("\n");
     // csv version (for spreadsheets)
-    const rows = [["日付", "時刻", "種類", "内容", "FODMAP", "そのほかの注意", "症状の場所", "小腸・大腸の目安", "強さ", "これかも（怪しい順）", "遅れて出るかも（10〜48時間前）", "メモ"]];
+    const rows = [["日付", "時刻", "種類", "内容", "FODMAP", "そのほかの注意", "症状の場所", "小腸・大腸の目安", "強さ", "これかも（怪しい順）", "遅れて出るかも（10〜48時間前）", "その日の体調", "メモ"]];
     for (const ev of r.events) {
       const d = new Date(ev.t); const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
       if (ev.type === "meal") {
         const its = splitItems(ev.x.food).map(it => [it, fodmapOf(it)]);
         rows.push([date, hm(ev.t), "食事", ev.x.food,
           its.filter(([, f]) => f.risk === "high" || f.risk === "mid").map(([it, f]) => `${it}:${f.risk === "high" ? "高" : "中"}(${f.groups.map(groupName).join("・")})`).join(" / "),
-          its.filter(([, f]) => f.triggers.length).map(([it, f]) => `${it}:${f.triggers.map(t => t.tag).join("・")}`).join(" / "), "", "", "", "", "", ""]);
+          its.filter(([, f]) => f.triggers.length).map(([it, f]) => `${it}:${f.triggers.map(t => t.tag).join("・")}`).join(" / "), "", "", "", "", "", "", dayFlags(dayDoc(r.d, dayOf(ev.t))).join("・")]);
       } else {
         const sym = ev.x; const w = whereText(sym.regions);
         rows.push([date, hm(ev.t), "症状", sym.kinds.map(kindLabel).join("・"), "", "", (sym.regions || []).map(regionLabel).join("・"), w ? w[0] : "",
           SEV.find(x => x.k === sym.severity)?.label || "", r.results[sym.id].map(c => `${dots(c.level)}${c.item}`).join(" / "),
-          lateSuspects(sym, m_all, stats_all).map(c => `${dots(c.level)}${c.key}`).join(" / "), sym.note || ""]);
+          lateSuspects(sym, m_all, stats_all).map(c => `${dots(c.level)}${c.key}`).join(" / "), dayFlags(dayDoc(r.d, dayOf(ev.t))).join("・"), sym.note || ""]);
       }
     }
     reportCsv = "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
@@ -1083,7 +1158,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const out = []; let cur = null, lastDay = "";
     for (const ev of r.events) {
       const dl = dayLabel(new Date(ev.t));
-      if (dl !== lastDay) { cur = el("div", { class: "day" }, el("span", { class: "day-head", text: dl })); out.push(cur); lastDay = dl; }
+      if (dl !== lastDay) { const fl = dayFlags(dayDoc(r.d, dayOf(ev.t))); const nt = dayDoc(r.d, dayOf(ev.t))?.note; cur = el("div", { class: "day" }, el("span", { class: "day-head" }, [dl, ...fl.map(f => el("span", { class: "chip day-chip", text: f })), nt ? el("span", { class: "small muted", text: " " + nt }) : null])); out.push(cur); lastDay = dl; }
       if (ev.type === "meal") cur.append(el("div", { class: "ev" }, [el("span", { class: "num", text: hm(ev.t) }), el("span", { text: ev.x.food })]));
       else {
         const sym = ev.x; const list = r.results[sym.id].slice(0, 3);
@@ -1143,7 +1218,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   }
   for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => show(b.dataset.view));
 
-  renderRef(); renderSupps(); renderSymForm(); renderAll(); init();
+  renderRef(); renderSupps(); renderSymForm(); renderDayForm(); renderAll(); init();
 })();
 </script>
 
