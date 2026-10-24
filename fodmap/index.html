@@ -56,7 +56,7 @@ img { max-width: 100%; }
 body {
   background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 48px;
+  padding-block: 20px calc(96px + env(safe-area-inset-bottom, 0px));
 }
 .wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
@@ -90,9 +90,25 @@ header { display: grid; gap: 6px; }
 .status { font-size: .8rem; color: var(--muted); }
 .status.local { color: var(--warn); }
 
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; font: inherit; font-weight: 500; color: var(--muted); cursor: pointer; }
-.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.single { display: grid; gap: 16px; max-width: 680px; width: 100%; margin: 0 auto; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; background: var(--accent-soft); border-radius: 999px; padding: 4px; max-width: 680px; width: 100%; margin: 0 auto; }
+.seg button { font: inherit; font-weight: 700; font-size: .92rem; border: 0; border-radius: 999px; padding: 9px 6px; background: transparent; color: var(--title); cursor: pointer; display: inline-flex; gap: 5px; align-items: center; justify-content: center; }
+.seg button[aria-selected="true"] { background: var(--surface); box-shadow: 0 1px 4px color-mix(in srgb, var(--title) 25%, transparent); }
+.seg .e, .bottom-nav .e { font-family: var(--font-pic); }
+@media (max-width: 640px) {
+  .hero-text > p.muted { display: none; }
+  h1 { font-size: 1.6rem; letter-spacing: .02em; }
+  .hero { padding-top: 14px; }
+  .hero-text { padding-bottom: 6px; }
+  .mascot { width: 104px; }
+  .mascot-wrap { grid-template-columns: minmax(0, 1fr) 104px; }
+}
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -2px 12px color-mix(in srgb, var(--title) 10%, transparent);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+.bottom-nav button { font: inherit; font-size: .72rem; font-weight: 700; border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; padding: 4px 2px; border-radius: 12px; cursor: pointer; max-width: 140px; justify-self: center; width: 100%; }
+.bottom-nav button .e { font-size: 1.35rem; line-height: 1.1; filter: grayscale(.6); opacity: .75; }
+.bottom-nav button[aria-current] { color: var(--title); background: var(--accent-soft); }
+.bottom-nav button[aria-current] .e { filter: none; opacity: 1; }
 
 .cols { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 860px) { .cols { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
@@ -137,6 +153,7 @@ td.heat { border-left: 2px solid var(--surface); }
 .chip.day-chip { background: var(--sky); color: var(--sky-ink); margin-left: 6px; }
 .day-ctx { font-size: .85rem; }
 .day-ctx .chip.day-chip:first-child { margin-left: 0; }
+form.editing { border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .kamo.late { background: var(--accent-soft); color: var(--title); border: 1px dashed var(--accent); }
 .kamo.late.l3 { background: var(--accent); color: var(--surface); border-style: solid; }
 .late-box { border-top: 1px dashed var(--accent); padding-top: 6px; margin-top: 4px; display: grid; gap: 2px; }
@@ -257,16 +274,14 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     </div>
   </header>
 
-  <nav class="tabs" role="tablist">
-    <button role="tab" id="tab-log" aria-selected="true" data-view="log">記録</button>
-    <button role="tab" id="tab-ref" aria-selected="false" data-view="ref">FODMAP一覧・判定のしかた</button>
-    <button role="tab" id="tab-supp" aria-selected="false" data-view="supp">サプリ・医薬品</button>
-    <button role="tab" id="tab-meds" aria-selected="false" data-view="meds">薬の詳細</button>
-    <button role="tab" id="tab-rel" aria-selected="false" data-view="rel">食品と症状の関係</button>
-    <button role="tab" id="tab-report" aria-selected="false" data-view="report">コーチに見せる</button>
-  </nav>
+  <div id="main-top"></div>
 
-  <section id="view-log" class="cols">
+  <section id="view-log" class="single">
+    <div class="seg" id="rec-seg" role="tablist" aria-label="記録するもの">
+      <button type="button" role="tab" data-rec="meal"><span class="e" aria-hidden="true">🍽️</span>食事</button>
+      <button type="button" role="tab" data-rec="sym"><span class="e" aria-hidden="true">🌀</span>症状</button>
+      <button type="button" role="tab" data-rec="day"><span class="e" aria-hidden="true">🌙</span>体調メモ</button>
+    </div>
     <div class="stack">
       <form class="panel" id="day-form" autocomplete="off" onsubmit="return false">
         <div class="row" style="justify-content:space-between">
@@ -281,10 +296,11 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
           <input type="text" id="day-note" placeholder="例：冷えた、運動した、外食続き">
         </label>
         <p class="small muted">タップするとすぐ保存されます。もう一度タップで取り消し。<span id="day-msg"></span></p>
+        <div class="row" id="day-del"></div>
       </form>
 
       <form class="panel" id="meal-form" autocomplete="off">
-        <h2>食べたものを記録</h2>
+        <h2 id="meal-title">食べたものを記録</h2>
         <label for="food">食べたもの・飲んだもの（サプリや薬も。「、」で区切ると1品ずつ判定します）
           <input type="text" id="food" placeholder="例：玉ねぎのカレー、ヨーグルト、りんご" required>
         </label>
@@ -292,11 +308,11 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
         <label for="eaten-at">食べた時刻
           <input type="datetime-local" id="eaten-at" required>
         </label>
-        <div class="row"><button class="btn" type="submit" id="save-meal">食事を記録</button><span class="small muted" id="meal-msg"></span></div>
+        <div class="row"><button class="btn" type="submit" id="save-meal">食事を記録</button><button class="btn quiet" type="button" id="cancel-meal" hidden>修正をやめる</button><span class="small muted" id="meal-msg"></span></div>
       </form>
 
       <form class="panel" id="sym-form" autocomplete="off">
-        <h2>症状を記録</h2>
+        <h2 id="sym-title">症状を記録</h2>
         <div class="group">
           <h3>どんな症状？（複数可）</h3>
           <p class="small muted">お腹</p>
@@ -320,10 +336,12 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
           <textarea id="sym-note" placeholder="例：朝から2回トイレ"></textarea>
         </label>
         <div class="preview" id="preview" aria-live="polite"></div>
-        <div class="row"><button class="btn alt" type="submit" id="save-sym">症状を記録</button><span class="small muted" id="sym-msg"></span></div>
+        <div class="row"><button class="btn alt" type="submit" id="save-sym">症状を記録</button><button class="btn quiet" type="button" id="cancel-sym" hidden>修正をやめる</button><span class="small muted" id="sym-msg"></span></div>
       </form>
     </div>
+  </section>
 
+  <section id="view-history" class="single" hidden>
     <div class="stack">
       <div class="panel">
         <div class="row" style="justify-content:space-between">
@@ -364,6 +382,12 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     <textarea id="report-fallback" class="sr" readonly tabindex="-1" aria-hidden="true"></textarea>
   </section>
 
+  <div class="seg" id="look-seg" role="tablist" aria-label="調べるもの" hidden>
+    <button type="button" role="tab" data-look="ref"><span class="e" aria-hidden="true">🥦</span>FODMAP</button>
+    <button type="button" role="tab" data-look="supp"><span class="e" aria-hidden="true">🦠</span>サプリ</button>
+    <button type="button" role="tab" data-look="meds"><span class="e" aria-hidden="true">💊</span>薬の詳細</button>
+  </div>
+
   <section id="view-meds" class="panel ref" hidden>
     <h2>その他の医薬品（詳細）</h2>
     <p class="small muted">お腹に影響が出ることのある薬を、種類ごとにまとめました。薬の名前（一般名でも商品名でも）を記録欄に入れると、「これかも」や関係の表に入ります。カードをタップすると記録欄に入ります。</p>
@@ -373,7 +397,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
 
   <section id="view-supp" class="panel ref" hidden>
     <h2>サプリ・医薬品</h2>
-    <p class="small muted">飲んだら食事と同じ欄に記録すると、「これかも」の判定に入ります。カードをタップすると記録欄に入ります。薬や漢方をやめたり量を変えたりするときは、自分で決めず医師・薬剤師に相談してください。ほかの薬は「薬の詳細」タブにあります。</p>
+    <p class="small muted">飲んだら食事と同じ欄に記録すると、「これかも」の判定に入ります。カードをタップすると記録欄に入ります。薬や漢方をやめたり量を変えたりするときは、自分で決めず医師・薬剤師に相談してください。ほかの薬は「薬の詳細」にあります。</p>
     <p class="small"><span class="risk-tag high">高</span>高FODMAP　<span class="risk-tag low">低</span>低FODMAP（お腹にやさしい）　<span class="risk-tag other">注意</span>FODMAPではないが、お腹に響きやすい</p>
     <div id="supp-list" class="ref"></div>
   </section>
@@ -401,7 +425,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
             <tr><td>脂質</td><td>ルーや揚げ物など脂質が多いものは少し上がる。FODMAPではないが、腸を刺激しやすいため。</td></tr>
             <tr><td>カフェイン・お酒・辛いもの</td><td>コーヒー・紅茶・緑茶、お酒、辛いものは上がる。症状に下痢があるときは大きく上がる。</td></tr>
             <tr><td>遅れて出るかも</td><td>「これかも」とは別の印です。これまでの記録全体で、その食品を食べた<b>10〜48時間後</b>に症状が出た割合が、ほかの食事より目立って高いと付きます。卵・乳・小麦・大豆・そば・えび/かに・ナッツ・ごまは料理名からまとめて数えます（例：卵焼き・オムレツ→卵）。2回以上重なってから付き、回数と割合が増えるほど●が増えます。<br><span class="muted">記録から見た傾向で、アレルギーの検査や診断ではありません。じんましん・息苦しさなどがあればすぐ受診し、アレルギーが気になるときは医師に相談してください。</span></td></tr>
-            <tr><td>サプリ・薬</td><td>「サプリ・医薬品」タブのものは、それぞれ起こしやすい症状のときに上がる（例：酸化マグネシウムは下痢、鉄剤は便秘）。</td></tr>
+            <tr><td>サプリ・薬</td><td>「調べる」の「サプリ」「薬の詳細」にあるものは、それぞれ起こしやすい症状のときに上がる（例：酸化マグネシウムは下痢、鉄剤は便秘）。</td></tr>
             <tr><td>症状の種類</td><td>下痢：果糖・乳糖・ポリオール／ガス・便秘：フルクタン・GOS が合う。</td></tr>
             <tr><td>あなたの過去の記録</td><td>ほかの症状の前10時間にも食べていた食品ほど上がる。記録が増えるほど、あなた向けの判定になります。</td></tr>
           </tbody>
@@ -414,6 +438,14 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     </div>
   </section>
 </div>
+
+<nav class="bottom-nav" aria-label="メニュー">
+  <button type="button" data-view="log"><span class="e" aria-hidden="true">✏️</span>記録する</button>
+  <button type="button" data-view="history"><span class="e" aria-hidden="true">📋</span>これまで</button>
+  <button type="button" data-view="rel"><span class="e" aria-hidden="true">📊</span>関係</button>
+  <button type="button" data-view="lookup"><span class="e" aria-hidden="true">📚</span>調べる</button>
+  <button type="button" data-view="report"><span class="e" aria-hidden="true">📤</span>コーチへ</button>
+</nav>
 
 <script>
 (() => {
@@ -491,7 +523,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       { f: "ビタミンC", pic: "🍋", text: "大量（1日に数g）だと下痢しやすくなります。" },
       { f: "抗生物質", pic: "💊", text: "腸内細菌が変わり、下痢になりやすい薬です。" },
       { f: "抗うつ薬", pic: "💊", text: "メンタル系の薬（抗うつ薬・抗不安薬・睡眠薬など）は、飲み始めや量を変えたときに、吐き気・下痢・便秘が出ることがあります。自分の判断でやめず、気になるときは医師に相談しましょう。" },
-      { f: "糖尿病薬", pic: "💊", text: "種類によってお腹への出方が違います。メトホルミンは下痢、α-GIはガス・お腹の張り、GLP-1の薬は吐き気・下痢・便秘が出やすいです。薬の名前で記録すると判定に入ります（詳しくは「薬の詳細」タブ）。" },
+      { f: "糖尿病薬", pic: "💊", text: "種類によってお腹への出方が違います。メトホルミンは下痢、α-GIはガス・お腹の張り、GLP-1の薬は吐き気・下痢・便秘が出やすいです。薬の名前で記録すると判定に入ります（詳しくは「調べる」→「薬の詳細」）。" },
     ] },
     { cat: "漢方薬", pic: "🌿", items: [
       { f: "漢方薬", pic: "🌿", text: "処方によってお腹への影響はいろいろ。市販の顆粒には乳糖が使われているものもあります。処方名ごと記録すると、関係の表で合う・合わないが見えてきます。" },
@@ -796,12 +828,18 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   const dayDoc = (d, date) => d.find(x => x.date === date);
   const dayFlags = doc => doc ? DAYQ.map(q => q.flag[doc[q.k]]).filter(Boolean) : [];
   $("day-date").value = toLocalInput(new Date()).slice(0, 10);
+  let dayDelConfirm = false;
   function renderDayForm() {
     const date = $("day-date").value; const doc = days.find(x => x.date === date) || {};
     $("day-qs").replaceChildren(...DAYQ.map(q => el("div", { class: "day-q" }, [el("span", { class: "day-q-label", text: q.label }),
       el("div", { class: "toggle" }, q.opts.map(([v, l]) => el("button", { type: "button", "aria-pressed": String(doc[q.k] === v), onclick: () => saveDay({ [q.k]: doc[q.k] === v ? null : v }) }, l)))])));
     if (document.activeElement !== $("day-note")) $("day-note").value = doc.note || "";
-    $("day-state").textContent = days.some(x => x.date === date) ? "この日のメモは保存済み" : "";
+    const has = days.some(x => x.date === date);
+    $("day-state").textContent = has ? "この日のメモは保存済み" : "";
+    $("day-del").replaceChildren(...(!has ? [] : dayDelConfirm ? [el("span", { class: "small", text: "この日のメモを消しますか？" }),
+      el("button", { class: "btn danger", type: "button", text: "消す", onclick: async () => { dayDelConfirm = false; try { await store.remove("days", date); flash("day-msg", "消しました"); } catch (e) { flash("day-msg", "消せませんでした。もう一度お試しください。"); } renderDayForm(); } }),
+      el("button", { class: "btn quiet", type: "button", text: "やめる", onclick: () => { dayDelConfirm = false; renderDayForm(); } })]
+      : [el("button", { class: "btn quiet small", type: "button", text: "この日のメモを消す", onclick: () => { dayDelConfirm = true; renderDayForm(); } })]));
   }
   async function saveDay(patch) {
     if (!store) return;
@@ -809,7 +847,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const doc = { ...(days.find(x => x.date === date) || {}), ...patch, date }; delete doc.id;
     try { await store.put("days", date, doc); flash("day-msg", "保存しました"); } catch (e) { flash("day-msg", "保存できませんでした。もう一度お試しください。"); }
   }
-  $("day-date").addEventListener("input", renderDayForm);
+  $("day-date").addEventListener("input", () => { dayDelConfirm = false; renderDayForm(); });
   $("day-note").addEventListener("change", () => { const doc = days.find(x => x.date === $("day-date").value) || {}; if (($("day-note").value.trim()) !== (doc.note || "")) saveDay({ note: $("day-note").value.trim() }); });
 
   // ---- meal form ----
@@ -829,12 +867,41 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     if (!food || !at) return;
     $("save-meal").disabled = true;
     try {
-      await store.add("meals", { food, eatenAt: at, createdAt: new Date().toISOString() });
+      const old = editMeal && meals.find(x => x.id === editMeal);
+      if (old) await store.put("meals", old.id, { food, eatenAt: at, createdAt: old.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+      else await store.add("meals", { food, eatenAt: at, createdAt: new Date().toISOString() });
       $("food").value = ""; renderDetect(); $("eaten-at").value = toLocalInput(new Date());
-      flash("meal-msg", "記録しました");
+      setMealEdit(null); flash("meal-msg", old ? "修正しました" : "記録しました");
     } catch (err) { flash("meal-msg", err?.code === "quota_exceeded" ? "保存できる件数がいっぱいです。古い記録を消してください。" : "保存できませんでした。もう一度お試しください。"); }
     finally { $("save-meal").disabled = false; }
   });
+  let editMeal = null, editSym = null;
+  function setMealEdit(id) {
+    editMeal = id; const on = !!id;
+    $("meal-title").textContent = on ? "食事の記録を修正" : "食べたものを記録";
+    $("save-meal").textContent = on ? "修正を保存" : "食事を記録";
+    $("cancel-meal").hidden = !on; $("meal-form").classList.toggle("editing", on);
+  }
+  function startMealEdit(meal) {
+    setMealEdit(meal.id); show("log"); setRec("meal");
+    $("food").value = meal.food; $("eaten-at").value = meal.eatenAt; renderDetect();
+    $("meal-form").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); $("food").focus({ preventScroll: true });
+  }
+  $("cancel-meal").addEventListener("click", () => { setMealEdit(null); $("food").value = ""; renderDetect(); $("eaten-at").value = toLocalInput(new Date()); });
+  function setSymEdit(id) {
+    editSym = id; const on = !!id;
+    $("sym-title").textContent = on ? "症状の記録を修正" : "症状を記録";
+    $("save-sym").textContent = on ? "修正を保存" : "症状を記録";
+    $("cancel-sym").hidden = !on; $("sym-form").classList.toggle("editing", on);
+  }
+  function resetSymForm() { draft.kinds.clear(); draft.regions.clear(); draft.severity = 2; $("sym-note").value = ""; $("sym-at").value = toLocalInput(new Date()); }
+  function startSymEdit(sym) {
+    setSymEdit(sym.id); show("log"); setRec("sym");
+    draft.kinds = new Set(sym.kinds || []); draft.regions = new Set(sym.regions || []); draft.severity = sym.severity || 2;
+    $("sym-at").value = sym.at; $("sym-note").value = sym.note || ""; renderSymForm();
+    $("sym-form").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  $("cancel-sym").addEventListener("click", () => { setSymEdit(null); resetSymForm(); renderSymForm(); });
   function flash(id, t) { $(id).textContent = t; setTimeout(() => { if ($(id).textContent === t) $(id).textContent = ""; }, 3000); }
 
   // ---- symptom form ----
@@ -866,7 +933,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const recent = mealsBefore(meals, at);
     if (!recent.length) { box.append(el("p", { class: "small muted", text: `この時刻の前${WINDOW_H}時間に記録した食事はありません。` })); return; }
     if (!draft.kinds.size) { box.append(el("p", { class: "small muted", text: `前${WINDOW_H}時間の食事 ${recent.length}件。症状を選ぶと「これかも」を出します。` })); return; }
-    const list = suspects({ id: "draft", at, kinds: [...draft.kinds], regions: [...draft.regions] }, meals, symptoms);
+    const list = suspects({ id: editSym || "draft", at, kinds: [...draft.kinds], regions: [...draft.regions] }, meals, symptoms);
     box.append(el("h3", { text: "保存すると付く「これかも」" }));
     if (!list.length) box.append(el("p", { class: "small muted", text: "怪しい食品は見つかりませんでした。" }));
     else box.append(...list.slice(0, 5).map(c => el("div", { class: "row small" }, [kamo(c.level), el("b", { text: c.item }), el("span", { class: "muted", text: `摂取から${c.h.toFixed(1)}時間` })])));
@@ -878,9 +945,12 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const at = $("sym-at").value; if (!at) return;
     $("save-sym").disabled = true;
     try {
-      await store.add("symptoms", { at, kinds: [...draft.kinds], regions: [...draft.regions], severity: draft.severity, note: $("sym-note").value.trim(), createdAt: new Date().toISOString() });
-      draft.kinds.clear(); draft.regions.clear(); draft.severity = 2; $("sym-note").value = ""; $("sym-at").value = toLocalInput(new Date());
-      renderSymForm(); flash("sym-msg", "記録しました。右の一覧に「これかも」が付きます。");
+      const body = { at, kinds: [...draft.kinds], regions: [...draft.regions], severity: draft.severity, note: $("sym-note").value.trim() };
+      const old = editSym && symptoms.find(x => x.id === editSym);
+      if (old) await store.put("symptoms", old.id, { ...body, createdAt: old.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+      else await store.add("symptoms", { ...body, createdAt: new Date().toISOString() });
+      resetSymForm(); setSymEdit(null);
+      renderSymForm(); flash("sym-msg", old ? "修正しました。「これかも」も付け直しました。" : "記録しました。「これまで」で「これかも」が見られます。");
     } catch (err) { flash("sym-msg", "保存できませんでした。もう一度お試しください。"); }
     finally { $("save-sym").disabled = false; }
   });
@@ -891,7 +961,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     if (ex) return el("span", { class: "chip plain", text: "記入例" });
     const key = kind + ":" + id;
     if (confirming === key) return el("div", { class: "confirm" }, ["この記録を消しますか？",
-      el("button", { class: "btn danger", type: "button", text: "消す", onclick: async () => { confirming = null; try { await store.remove(kind, id); } catch (e) {} renderAll(); } }),
+      el("button", { class: "btn danger", type: "button", text: "消す", onclick: async () => { confirming = null; if (kind === "meals" && editMeal === id) $("cancel-meal").click(); if (kind === "symptoms" && editSym === id) $("cancel-sym").click(); try { await store.remove(kind, id); } catch (e) {} renderAll(); } }),
       el("button", { class: "btn quiet", type: "button", text: "やめる", onclick: () => { confirming = null; renderAll(); } })]);
     return el("button", { class: "btn quiet small", type: "button", text: "削除", onclick: () => { confirming = key; renderAll(); } });
   }
@@ -920,7 +990,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
             const late = Math.max(0, ...lateKeys(it).map(k => stats.per[k]?.level || 0));
             return el("span", { class: "item" }, [f.foods[0] && PIC[f.foods[0]] ? el("span", { class: "e", text: PIC[f.foods[0]], "aria-hidden": "true" }) : null, it, f.risk ? el("span", { class: f.risk === "high" ? "chip hi" : "chip mid", text: (f.risk === "high" ? "高：" : "中：") + f.groups.map(groupName).join("・") }) : null, lv ? kamo(lv) : null, late ? lateMark(late) : null]);
           })),
-          el("div", { class: "row" }, removeButtons("meals", meal.id, ex)),
+          el("div", { class: "row" }, [ex || confirming === "meals:" + meal.id ? null : el("button", { class: "btn quiet small", type: "button", text: "修正", onclick: () => startMealEdit(meal) }), removeButtons("meals", meal.id, ex)]),
         ]));
       } else {
         const sym = ev.x; const list = results[sym.id]; const w = whereText(sym.regions);
@@ -938,7 +1008,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
             ...late.map(c => el("div", { class: "cand" }, [lateMark(c.level),
               el("span", { class: "cand-name" }, [c.key, el("span", { class: "small muted", text: `　${c.item}・${Math.round(c.h)}時間前` })]),
               el("span", { class: "why", text: lateWhy(c) })]))])] : []; })(),
-          el("div", { class: "row" }, removeButtons("symptoms", sym.id, ex)),
+          el("div", { class: "row" }, [ex || confirming === "symptoms:" + sym.id ? null : el("button", { class: "btn quiet small", type: "button", text: "修正", onclick: () => startSymEdit(sym) }), removeButtons("symptoms", sym.id, ex)]),
         ]));
       }
     }
@@ -1291,13 +1361,28 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       ]));
     }
   }
-  function addFood(f) { const inp = $("food"); inp.value = inp.value.trim() ? inp.value.trim() + "、" + f : f; renderDetect(); show("log"); inp.focus(); }
+  function addFood(f) { const inp = $("food"); inp.value = inp.value.trim() ? inp.value.trim() + "、" + f : f; renderDetect(); show("log"); setRec("meal"); inp.focus(); }
   $("ref-q").addEventListener("input", renderRef);
-  function show(v) {
-    for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.view === v));
-    $("view-log").hidden = v !== "log"; $("view-ref").hidden = v !== "ref"; $("view-supp").hidden = v !== "supp"; $("view-report").hidden = v !== "report"; $("view-rel").hidden = v !== "rel"; $("view-meds").hidden = v !== "meds";
+  let recSub = "meal", lookSub = "ref";
+  function setRec(k) {
+    recSub = k;
+    for (const b of document.querySelectorAll("#rec-seg button")) b.setAttribute("aria-selected", String(b.dataset.rec === k));
+    $("meal-form").hidden = k !== "meal"; $("sym-form").hidden = k !== "sym"; $("day-form").hidden = k !== "day";
   }
-  for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => show(b.dataset.view));
+  function show(v) {
+    if (["ref", "supp", "meds"].includes(v)) { lookSub = v; v = "lookup"; }
+    for (const b of document.querySelectorAll(".bottom-nav button")) b.toggleAttribute("aria-current", b.dataset.view === v);
+    $("view-log").hidden = v !== "log"; $("view-history").hidden = v !== "history"; $("view-rel").hidden = v !== "rel"; $("view-report").hidden = v !== "report";
+    $("look-seg").hidden = v !== "lookup";
+    for (const k of ["ref", "supp", "meds"]) $("view-" + k).hidden = !(v === "lookup" && lookSub === k);
+    for (const b of document.querySelectorAll("#look-seg button")) b.setAttribute("aria-selected", String(b.dataset.look === lookSub));
+    const y = $("main-top").getBoundingClientRect().top + window.scrollY - 8;
+    if (window.scrollY > y) window.scrollTo(0, y);
+  }
+  for (const b of document.querySelectorAll(".bottom-nav button")) b.addEventListener("click", () => show(b.dataset.view));
+  for (const b of document.querySelectorAll("#rec-seg button")) b.addEventListener("click", () => setRec(b.dataset.rec));
+  for (const b of document.querySelectorAll("#look-seg button")) b.addEventListener("click", () => show(b.dataset.look));
+  setRec("meal"); show("log");
 
   renderRef(); renderSupps(); renderMeds(); renderSymForm(); renderDayForm(); renderAll(); init();
 })();
