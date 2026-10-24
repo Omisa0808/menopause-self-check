@@ -153,6 +153,9 @@ td.heat { border-left: 2px solid var(--surface); }
 .chip.day-chip { background: var(--sky); color: var(--sky-ink); margin-left: 6px; }
 .day-ctx { font-size: .85rem; }
 .day-ctx .chip.day-chip:first-child { margin-left: 0; }
+.ex-banner { display: grid; gap: 4px; text-align: center; padding: 14px 16px; border-radius: 16px; border: 2px dashed var(--accent); background: var(--accent-soft); color: var(--title); }
+.ex-banner b { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: .06em; }
+.ex-banner span { font-size: .85rem; color: var(--ink); }
 form.editing { border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .kamo.late { background: var(--accent-soft); color: var(--title); border: 1px dashed var(--accent); }
 .kamo.late.l3 { background: var(--accent); color: var(--surface); border-style: solid; }
@@ -342,6 +345,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   </section>
 
   <section id="view-history" class="single" hidden>
+    <div class="ex-banner" hidden><b>これは見本です</b><span>まだ記録がないので、例を表示しています。「記録する」から食事や症状を記録すると、見本は消えてあなたの記録だけになります。</span></div>
     <div class="stack">
       <div class="panel">
         <div class="row" style="justify-content:space-between">
@@ -361,6 +365,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   </section>
 
   <section id="view-rel" class="panel ref" hidden>
+    <div class="ex-banner" hidden><b>これは見本です</b><span>まだ記録がないので、例を表示しています。記録を始めると消えます。</span></div>
     <h2>食品と症状の関係（食べてから48時間まで）</h2>
     <p class="small muted">食品ごとに、食べたあと各時間帯に症状が出た割合です。いちばん上の「ふだん」は、すべての食事での割合です。ふだんより赤く濃いマスほど、その時間帯に症状とつながっていそうです。2回以上食べた食品だけを出しています。</p>
     <div class="filters" id="rel-kind"></div>
@@ -369,6 +374,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   </section>
 
   <section id="view-report" class="panel ref" hidden>
+    <div class="ex-banner" hidden><b>これは見本です</b><span>まだ記録がないので、例を表示しています。見本のあいだはコピーや保存はできません。</span></div>
     <h2>コーチに見せるレポート</h2>
     <p class="small muted">期間を選ぶと、その間の食事・症状・「これかも」をまとめます。ファイルで保存するか、文章をコピーしてLINEやメールに貼ってください。メモ欄の内容もそのまま入ります。</p>
     <div class="filters" id="report-range"></div>
@@ -967,6 +973,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   }
   function renderAll() {
     const { m, s, d, ex } = data();
+    for (const b of document.querySelectorAll(".ex-banner")) b.hidden = !ex;
     const results = {}; // symptom id -> suspects
     for (const sym of s) results[sym.id] = suspects(sym, m, s);
     const stats = lateStats(m, s);
