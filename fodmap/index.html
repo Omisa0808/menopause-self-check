@@ -153,9 +153,6 @@ td.heat { border-left: 2px solid var(--surface); }
 .chip.day-chip { background: var(--sky); color: var(--sky-ink); margin-left: 6px; }
 .day-ctx { font-size: .85rem; }
 .day-ctx .chip.day-chip:first-child { margin-left: 0; }
-.ex-banner { display: grid; gap: 4px; text-align: center; padding: 14px 16px; border-radius: 16px; border: 2px dashed var(--accent); background: var(--accent-soft); color: var(--title); }
-.ex-banner b { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: .06em; }
-.ex-banner span { font-size: .85rem; color: var(--ink); }
 .card.med { border-left: 4px solid var(--accent); }
 .regular { background: var(--accent-soft); border-radius: 14px; padding: 12px; }
 .reg-chip { font: inherit; font-weight: 700; font-size: .9rem; border: 1.5px solid var(--accent); background: var(--surface); color: var(--title); border-radius: 999px; padding: 6px 14px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
@@ -377,7 +374,6 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   </section>
 
   <section id="view-history" class="single" hidden>
-    <div class="ex-banner" hidden><b>これは見本です</b><span>まだ記録がないので、例を表示しています。「記録する」から食事や症状を記録すると、見本は消えてあなたの記録だけになります。</span></div>
     <div class="stack">
       <div class="panel">
         <div class="row" style="justify-content:space-between">
@@ -397,7 +393,6 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   </section>
 
   <section id="view-rel" class="panel ref" hidden>
-    <div class="ex-banner" hidden><b>これは見本です</b><span>まだ記録がないので、例を表示しています。記録を始めると消えます。</span></div>
     <h2>食品と症状の関係（食べてから48時間まで）</h2>
     <p class="small muted">食品ごとに、食べたあと各時間帯に症状が出た割合です。いちばん上の「ふだん」は、すべての食事での割合です。ふだんより赤く濃いマスほど、その時間帯に症状とつながっていそうです。2回以上食べた食品だけを出しています。</p>
     <div class="filters" id="rel-kind"></div>
@@ -406,7 +401,6 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   </section>
 
   <section id="view-report" class="panel ref" hidden>
-    <div class="ex-banner" hidden><b>これは見本です</b><span>まだ記録がないので、例を表示しています。見本のあいだはコピーや保存はできません。</span></div>
     <h2>コーチに見せるレポート</h2>
     <p class="small muted">期間を選ぶと、その間の食事・症状・「これかも」をまとめます。ファイルで保存するか、文章をコピーしてLINEやメールに貼ってください。メモ欄の内容もそのまま入ります。</p>
     <div class="filters" id="report-range"></div>
@@ -828,33 +822,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   const kamo = lv => el("span", { class: "kamo l" + lv, title: ["", "少し怪しい", "怪しい", "とても怪しい"][lv] },
     [el("span", { class: "dots", text: "●".repeat(lv) + "○".repeat(3 - lv) }), "これかも"]);
 
-  // ---- example data (shown only while nothing is recorded) ----
-  function exampleData() {
-    const now = Date.now(), H = 3600000;
-    const m = [
-      { id: "exa", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 170 * H)) },
-      { id: "exb", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 160 * H)) },
-      { id: "exe1", food: "卵焼き、ご飯", eatenAt: toLocalInput(new Date(now - 122 * H)) },
-      { id: "exc", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 105 * H)) },
-      { id: "exd", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 98 * H)) },
-      { id: "exf", food: "ご飯、焼き魚", eatenAt: toLocalInput(new Date(now - 95 * H)) },
-      { id: "exe2", food: "オムレツ、ご飯", eatenAt: toLocalInput(new Date(now - 68 * H)) },
-      { id: "ex0", food: "玉ねぎスープ、パン", eatenAt: toLocalInput(new Date(now - 50 * H)) },
-      { id: "exe3", food: "ゆで卵、ご飯", eatenAt: toLocalInput(new Date(now - 43 * H)) },
-      { id: "ex1", food: "トースト、カフェラテ、りんご", eatenAt: toLocalInput(new Date(now - 27 * H)) },
-      { id: "ex2", food: "玉ねぎのカレー、ご飯", eatenAt: toLocalInput(new Date(now - 25 * H)) },
-      { id: "ex3", food: "おにぎり、味噌汁", eatenAt: toLocalInput(new Date(now - 22 * H)) },
-    ];
-    const s = [{ id: "exs1", at: toLocalInput(new Date(now - 100 * H)), kinds: ["pain", "diarrhea"], regions: ["lm", "ll"], severity: 2 }, { id: "exs0", at: toLocalInput(new Date(now - 44 * H)), kinds: ["gas"], regions: ["ml", "ll"], severity: 1 }, { id: "exs", at: toLocalInput(new Date(now - 19 * H)), kinds: ["gas", "pain"], regions: ["lm", "ll", "ml"], severity: 2 }];
-    const day = h => toLocalInput(new Date(now - h * H)).slice(0, 10);
-    const d = [
-      { date: day(170), sleep: 1, stress: 1, period: 0 }, { date: day(122), sleep: 2, stress: 2, period: 0 },
-      { date: day(100), sleep: 3, stress: 3, period: 1 }, { date: day(68), sleep: 2, stress: 1, period: 1 },
-      { date: day(44), sleep: 3, stress: 2, period: 2 }, { date: day(19), sleep: 3, stress: 3, period: 2 },
-    ].map(x => ({ ...x, id: x.date }));
-    return { m, s, d };
-  }
-  const data = () => (meals.length || symptoms.length || days.length) ? { m: meals, s: symptoms, d: days, ex: false } : { ...exampleData(), ex: true };
+  const data = () => ({ m: meals, s: symptoms, d: days, ex: false });
 
   // ---- today's condition memo ----
   const DAYQ = [
@@ -1070,7 +1038,6 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   }
   function renderAll() {
     const { m, s, d, ex } = data();
-    for (const b of document.querySelectorAll(".ex-banner")) b.hidden = !ex;
     const results = {}; // symptom id -> suspects
     for (const sym of s) results[sym.id] = suspects(sym, m, s);
     const stats = lateStats(m, s);
@@ -1082,7 +1049,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
 
     const box = $("log"); box.replaceChildren();
     $("count").textContent = ex ? "" : `食事${m.length}件・症状${s.length}件`;
-    if (ex) box.append(el("p", { class: "empty small", text: "まだ記録がありません。左の欄から食事と症状を記録すると、ここに時刻順で並びます。下は記入例です。" }));
+    if (!m.length && !s.length) box.append(el("p", { class: "empty small", text: "まだ記録がありません。下の「✏️ 記録する」から食事や症状を記録すると、ここに時刻順で並びます。" }));
     const events = [...m.map(x => ({ t: x.eatenAt, type: "meals", x })), ...s.map(x => ({ t: x.at, type: "symptoms", x }))].sort((a, b) => b.t.localeCompare(a.t));
     for (const ev of events.slice(0, 300)) {
       if (ev.type === "meals") {
@@ -1121,7 +1088,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     renderReport();
     renderRel();
     $("bubble").textContent =
-      ex ? "はじめまして！食べたものとお腹の症状を記録してね。怪しい食べ物を一緒に探すよ。"
+      !m.length && !s.length ? "はじめまして！食べたものとお腹の症状を記録してね。怪しい食べ物を一緒に探すよ。"
       : top && top.max >= 3 ? `いまいちばんの「これかも」は「${top.name}」。しばらく控えて、様子を見てみる？`
       : top ? `「${top.name}」が少し怪しいかも。記録が増えるほど、もっと絞りこめるよ。`
       : !s.length ? "記録ありがとう！お腹の調子が変わったら、症状も記録してね。"
@@ -1336,7 +1303,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     reportCsv = "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
     reportName = `おなかダイアリー_${ymd(r.start)}-${ymd(r.end)}`;
     $("report-fallback").value = reportText;
-    for (const id of ["dl-csv", "dl-txt", "copy-txt"]) $(id).disabled = r.ex;
+    for (const id of ["dl-csv", "dl-txt", "copy-txt"]) $(id).disabled = !r.events.length;
     // on-screen sheet
     box.append(
       el("div", { class: "row", style: "justify-content:space-between" }, [el("h3", { text: `${period}のまとめ` }), r.ex ? el("span", { class: "chip plain", text: "記入例" }) : null]),
