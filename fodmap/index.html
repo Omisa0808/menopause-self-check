@@ -156,6 +156,15 @@ td.heat { border-left: 2px solid var(--surface); }
 .ex-banner { display: grid; gap: 4px; text-align: center; padding: 14px 16px; border-radius: 16px; border: 2px dashed var(--accent); background: var(--accent-soft); color: var(--title); }
 .ex-banner b { font-family: var(--font-display); font-size: 1.35rem; letter-spacing: .06em; }
 .ex-banner span { font-size: .85rem; color: var(--ink); }
+.card.med { border-left: 4px solid var(--accent); }
+.regular { background: var(--accent-soft); border-radius: 14px; padding: 12px; }
+.reg-chip { font: inherit; font-weight: 700; font-size: .9rem; border: 1.5px solid var(--accent); background: var(--surface); color: var(--title); border-radius: 999px; padding: 6px 14px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.reg-chip .e { font-family: var(--font-pic); }
+.reg-chip.editing { border-style: dashed; }
+.reg-chip .x { color: var(--mark); font-size: 1.1rem; line-height: 1; }
+label.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-weight: 500; }
+label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+@media (max-width: 420px) { .seg button { font-size: .8rem; gap: 3px; padding: 9px 2px; } }
 form.editing { border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .kamo.late { background: var(--accent-soft); color: var(--title); border: 1px dashed var(--accent); }
 .kamo.late.l3 { background: var(--accent); color: var(--surface); border-style: solid; }
@@ -282,6 +291,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   <section id="view-log" class="single">
     <div class="seg" id="rec-seg" role="tablist" aria-label="記録するもの">
       <button type="button" role="tab" data-rec="meal"><span class="e" aria-hidden="true">🍽️</span>食事</button>
+      <button type="button" role="tab" data-rec="med"><span class="e" aria-hidden="true">💊</span>薬・サプリ</button>
       <button type="button" role="tab" data-rec="sym"><span class="e" aria-hidden="true">🌀</span>症状</button>
       <button type="button" role="tab" data-rec="day"><span class="e" aria-hidden="true">🌙</span>体調メモ</button>
     </div>
@@ -304,7 +314,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
 
       <form class="panel" id="meal-form" autocomplete="off">
         <h2 id="meal-title">食べたものを記録</h2>
-        <label for="food">食べたもの・飲んだもの（サプリや薬も。「、」で区切ると1品ずつ判定します）
+        <label for="food">食べたもの・飲んだもの（「、」で区切ると1品ずつ判定します。薬・サプリは隣の「薬・サプリ」へ）
           <input type="text" id="food" placeholder="例：玉ねぎのカレー、ヨーグルト、りんご" required>
         </label>
         <div class="detect chips" id="detect" aria-live="polite"></div>
@@ -312,6 +322,28 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
           <input type="datetime-local" id="eaten-at" required>
         </label>
         <div class="row"><button class="btn" type="submit" id="save-meal">食事を記録</button><button class="btn quiet" type="button" id="cancel-meal" hidden>修正をやめる</button><span class="small muted" id="meal-msg"></span></div>
+      </form>
+
+      <form class="panel" id="med-form" autocomplete="off">
+        <h2 id="med-title">薬・サプリを記録</h2>
+        <div class="group regular">
+          <div class="row" style="justify-content:space-between"><h3>いつもの薬</h3><button type="button" class="btn quiet small" id="regular-edit" hidden>整理する</button></div>
+          <div class="chips" id="regular-list"></div>
+          <p class="small muted" id="regular-hint"></p>
+        </div>
+        <label for="med-name">薬・サプリの名前
+          <input type="text" id="med-name" list="med-options" placeholder="例：酸化マグネシウム、乳酸菌サプリ" required>
+        </label>
+        <datalist id="med-options"></datalist>
+        <div class="detect chips" id="med-detect" aria-live="polite"></div>
+        <label for="med-dose">量・メモ（任意）
+          <input type="text" id="med-dose" placeholder="例：1錠、2包、今日から増量">
+        </label>
+        <label for="med-at">飲んだ時刻
+          <input type="datetime-local" id="med-at" required>
+        </label>
+        <label class="check" for="med-regular"><input type="checkbox" id="med-regular"> 「いつもの薬」に入れる（次からワンタップで記録できます）</label>
+        <div class="row"><button class="btn" type="submit" id="save-med">薬を記録</button><button class="btn quiet" type="button" id="cancel-med" hidden>修正をやめる</button><span class="small muted" id="med-msg"></span></div>
       </form>
 
       <form class="panel" id="sym-form" autocomplete="off">
@@ -742,10 +774,10 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   }
 
   // ---- storage: db (private per person) or this browser as fallback ----
-  let meals = [], symptoms = [], days = [], store = null, exampleMode = false;
+  let meals = [], symptoms = [], days = [], regular = [], store = null, exampleMode = false;
   function localStore() {
     const read = name => { try { return JSON.parse(localStorage.getItem("fodmap-" + name) || "[]"); } catch (e) { return []; } };
-    const mem = { meals: read("meals"), symptoms: read("symptoms"), days: read("days") }; const cbs = {};
+    const mem = { meals: read("meals"), symptoms: read("symptoms"), days: read("days"), settings: read("settings") }; const cbs = {};
     const persist = name => { try { localStorage.setItem("fodmap-" + name, JSON.stringify(mem[name])); } catch (e) {} cbs[name]?.(mem[name].slice()); };
     return {
       subscribe(name, f) { cbs[name] = f; f(mem[name].slice()); },
@@ -783,6 +815,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     store.subscribe("meals", list => { meals = list.filter(m => m.food && m.eatenAt); renderAll(); });
     store.subscribe("symptoms", list => { symptoms = list.filter(s => s.at); renderAll(); });
     store.subscribe("days", list => { days = list.filter(x => x.date); renderDayForm(); renderAll(); });
+    store.subscribe("settings", list => { regular = list.find(x => x.id === "regular")?.items || []; renderRegular(); });
   }
 
   // ---- time helpers ----
@@ -881,6 +914,70 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     } catch (err) { flash("meal-msg", err?.code === "quota_exceeded" ? "保存できる件数がいっぱいです。古い記録を消してください。" : "保存できませんでした。もう一度お試しください。"); }
     finally { $("save-meal").disabled = false; }
   });
+  // ---- medicines & supplements ----
+  let editMed = null, regEditing = false;
+  $("med-at").value = toLocalInput(new Date());
+  function renderMedOptions() {
+    const names = [...new Set([...regular.map(r => r.name), ...SUPPS.flatMap(c => c.items.map(x => x.f)), ...MEDS.flatMap(c => c.items.map(x => x.f))])];
+    $("med-options").replaceChildren(...names.map(n => el("option", { value: n })));
+  }
+  function renderMedDetect() {
+    const box = $("med-detect"); box.replaceChildren(); const n = $("med-name").value.trim(); if (!n) return;
+    const f = fodmapOf(n);
+    const parts = [...(f.risk === "high" || f.risk === "mid" ? [`${f.risk === "high" ? "高" : "中"}FODMAP（${f.groups.map(groupName).join("・")}）`] : f.risk === "low" ? ["低FODMAP"] : []), ...f.triggers.map(t => t.tag)];
+    box.append(el("span", { class: parts.length ? "chip mid" : "chip plain", text: parts.length ? `${n}：${parts.join("・")}` : `${n}（判定に使う情報はまだありません。関係の表で傾向を見られます）` }));
+  }
+  $("med-name").addEventListener("input", renderMedDetect);
+  function renderRegular() {
+    renderMedOptions();
+    const box = $("regular-list"); box.replaceChildren();
+    $("regular-edit").hidden = !regular.length; $("regular-edit").textContent = regEditing ? "整理を終える" : "整理する";
+    $("regular-hint").textContent = !regular.length ? "毎日飲む薬は「いつもの薬」に入れておくと、ここからワンタップで記録できます。" : regEditing ? "× で「いつもの薬」から外します（記録は消えません）。" : "タップすると、今の時刻で記録します。";
+    regular.forEach((r, i) => box.append(regEditing
+      ? el("button", { type: "button", class: "reg-chip editing", onclick: () => saveRegular(regular.filter((_, j) => j !== i)) }, [el("span", { class: "e", text: "💊", "aria-hidden": "true" }), r.name + (r.dose ? `（${r.dose}）` : ""), el("span", { class: "x", text: "×" })])
+      : el("button", { type: "button", class: "reg-chip", onclick: () => quickMed(r) }, [el("span", { class: "e", text: "💊", "aria-hidden": "true" }), r.name + (r.dose ? `（${r.dose}）` : "")])));
+  }
+  $("regular-edit").addEventListener("click", () => { regEditing = !regEditing; renderRegular(); });
+  async function saveRegular(items) {
+    regular = items; renderRegular();
+    try { await store.put("settings", "regular", { items }); } catch (e) { flash("med-msg", "「いつもの薬」を保存できませんでした。"); }
+  }
+  async function quickMed(r) {
+    if (!store) return;
+    const at = toLocalInput(new Date());
+    try { await store.add("meals", { food: r.name, dose: r.dose || "", type: "med", eatenAt: at, createdAt: new Date().toISOString() }); flash("med-msg", `${r.name}を${at.slice(11)}に記録しました`); }
+    catch (e) { flash("med-msg", "保存できませんでした。もう一度お試しください。"); }
+  }
+  function setMedEdit(id) {
+    editMed = id; const on = !!id;
+    $("med-title").textContent = on ? "薬・サプリの記録を修正" : "薬・サプリを記録";
+    $("save-med").textContent = on ? "修正を保存" : "薬を記録";
+    $("cancel-med").hidden = !on; $("med-form").classList.toggle("editing", on);
+  }
+  function resetMedForm() { $("med-name").value = ""; $("med-dose").value = ""; $("med-regular").checked = false; $("med-at").value = toLocalInput(new Date()); renderMedDetect(); }
+  function startMedEdit(x) {
+    setMedEdit(x.id); show("log"); setRec("med");
+    $("med-name").value = x.food; $("med-dose").value = x.dose || ""; $("med-at").value = x.eatenAt; renderMedDetect();
+    $("med-form").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  function addMed(name) { if (editMed) { setMedEdit(null); resetMedForm(); } $("med-name").value = name; renderMedDetect(); show("log"); setRec("med"); $("med-dose").focus(); }
+  $("cancel-med").addEventListener("click", () => { setMedEdit(null); resetMedForm(); });
+  $("med-form").addEventListener("submit", async e => {
+    e.preventDefault(); if (!store) return;
+    const name = $("med-name").value.trim(), dose = $("med-dose").value.trim(), at = $("med-at").value;
+    if (!name || !at) return;
+    $("save-med").disabled = true;
+    try {
+      const old = editMed && meals.find(x => x.id === editMed);
+      const body = { food: name, dose, type: "med", eatenAt: at };
+      if (old) await store.put("meals", old.id, { ...body, createdAt: old.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+      else await store.add("meals", { ...body, createdAt: new Date().toISOString() });
+      if ($("med-regular").checked && !regular.some(r => r.name === name && (r.dose || "") === dose)) await saveRegular([...regular, { name, dose }]);
+      setMedEdit(null); resetMedForm(); flash("med-msg", old ? "修正しました" : "記録しました");
+    } catch (err) { flash("med-msg", "保存できませんでした。もう一度お試しください。"); }
+    finally { $("save-med").disabled = false; }
+  });
+
   let editMeal = null, editSym = null;
   function setMealEdit(id) {
     editMeal = id; const on = !!id;
@@ -967,7 +1064,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     if (ex) return el("span", { class: "chip plain", text: "記入例" });
     const key = kind + ":" + id;
     if (confirming === key) return el("div", { class: "confirm" }, ["この記録を消しますか？",
-      el("button", { class: "btn danger", type: "button", text: "消す", onclick: async () => { confirming = null; if (kind === "meals" && editMeal === id) $("cancel-meal").click(); if (kind === "symptoms" && editSym === id) $("cancel-sym").click(); try { await store.remove(kind, id); } catch (e) {} renderAll(); } }),
+      el("button", { class: "btn danger", type: "button", text: "消す", onclick: async () => { confirming = null; if (kind === "meals" && editMeal === id) $("cancel-meal").click(); if (kind === "meals" && editMed === id) $("cancel-med").click(); if (kind === "symptoms" && editSym === id) $("cancel-sym").click(); try { await store.remove(kind, id); } catch (e) {} renderAll(); } }),
       el("button", { class: "btn quiet", type: "button", text: "やめる", onclick: () => { confirming = null; renderAll(); } })]);
     return el("button", { class: "btn quiet small", type: "button", text: "削除", onclick: () => { confirming = key; renderAll(); } });
   }
@@ -990,14 +1087,15 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     for (const ev of events.slice(0, 300)) {
       if (ev.type === "meals") {
         const meal = ev.x;
-        box.append(el("article", { class: "card" + (ex ? " example" : "") }, [
-          el("div", { class: "card-top" }, [el("span", { class: "card-title", text: "食事" }), el("span", { class: "num small muted", text: fmt(meal.eatenAt) })]),
+        const isMed = meal.type === "med";
+        box.append(el("article", { class: "card" + (isMed ? " med" : "") + (ex ? " example" : "") }, [
+          el("div", { class: "card-top" }, [el("span", { class: "card-title", text: isMed ? "💊 薬・サプリ" + (meal.dose ? `（${meal.dose}）` : "") : "食事" }), el("span", { class: "num small muted", text: fmt(meal.eatenAt) })]),
           el("div", { class: "items" }, splitItems(meal.food).map(it => {
             const f = fodmapOf(it); const lv = mealMarks[meal.id + "|" + it];
             const late = Math.max(0, ...lateKeys(it).map(k => stats.per[k]?.level || 0));
             return el("span", { class: "item" }, [f.foods[0] && PIC[f.foods[0]] ? el("span", { class: "e", text: PIC[f.foods[0]], "aria-hidden": "true" }) : null, it, f.risk ? el("span", { class: f.risk === "high" ? "chip hi" : "chip mid", text: (f.risk === "high" ? "高：" : "中：") + f.groups.map(groupName).join("・") }) : null, lv ? kamo(lv) : null, late ? lateMark(late) : null]);
           })),
-          el("div", { class: "row" }, [ex || confirming === "meals:" + meal.id ? null : el("button", { class: "btn quiet small", type: "button", text: "修正", onclick: () => startMealEdit(meal) }), removeButtons("meals", meal.id, ex)]),
+          el("div", { class: "row" }, [ex || confirming === "meals:" + meal.id ? null : el("button", { class: "btn quiet small", type: "button", text: "修正", onclick: () => isMed ? startMedEdit(meal) : startMealEdit(meal) }), removeButtons("meals", meal.id, ex)]),
         ]));
       } else {
         const sym = ev.x; const list = results[sym.id]; const w = whereText(sym.regions);
@@ -1192,7 +1290,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const T = [];
     T.push(`【カンガルーみさみさのおなかダイアリー】${r.ex ? "（記入例）" : ""}`);
     T.push(`期間：${period}`);
-    T.push(`食事 ${r.meals.length}件／症状 ${r.syms.length}回（${r.kindText}）／症状のあった日 ${r.symDays}日`);
+    T.push(`食事 ${r.meals.filter(x => x.type !== "med").length}件／薬・サプリ ${r.meals.filter(x => x.type === "med").length}回／症状 ${r.syms.length}回（${r.kindText}）／症状のあった日 ${r.symDays}日`);
     T.push(`症状の場所：大腸の目安 ${r.loc.large}回・小腸の目安 ${r.loc.small}回`);
     T.push("", "■ 要注意食品（これかも）");
     if (r.risky.length) r.risky.forEach(x => T.push(`${dots(x.max)} ${x.name}（${x.n}回）`)); else T.push("なし");
@@ -1209,7 +1307,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     let lastDay = "";
     for (const ev of r.events) {
       const dl = dayLabel(new Date(ev.t)); if (dl !== lastDay) { const fl = dayFlags(dayDoc(r.d, dayOf(ev.t))); const nt = dayDoc(r.d, dayOf(ev.t))?.note; T.push(dl + (fl.length ? `［${fl.join("・")}］` : "") + (nt ? ` ${nt}` : "")); lastDay = dl; }
-      if (ev.type === "meal") T.push(` ${hm(ev.t)} 食事：${ev.x.food}`);
+      if (ev.type === "meal") T.push(` ${hm(ev.t)} ${ev.x.type === "med" ? "薬・サプリ" : "食事"}：${ev.x.food}${ev.x.dose ? `（${ev.x.dose}）` : ""}`);
       else {
         const sym = ev.x; const w = whereText(sym.regions); const list = r.results[sym.id].slice(0, 3);
         T.push(` ${hm(ev.t)} 症状：${sym.kinds.map(kindLabel).join("・")}（${SEV.find(x => x.k === sym.severity)?.label || ""}）${sym.regions?.length ? " " + sym.regions.map(regionLabel).join("・") + (w ? `［${w[0]}の目安］` : "") : ""}`);
@@ -1225,7 +1323,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       const d = new Date(ev.t); const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
       if (ev.type === "meal") {
         const its = splitItems(ev.x.food).map(it => [it, fodmapOf(it)]);
-        rows.push([date, hm(ev.t), "食事", ev.x.food,
+        rows.push([date, hm(ev.t), ev.x.type === "med" ? "薬・サプリ" : "食事", ev.x.food + (ev.x.dose ? `（${ev.x.dose}）` : ""),
           its.filter(([, f]) => f.risk === "high" || f.risk === "mid").map(([it, f]) => `${it}:${f.risk === "high" ? "高" : "中"}(${f.groups.map(groupName).join("・")})`).join(" / "),
           its.filter(([, f]) => f.triggers.length).map(([it, f]) => `${it}:${f.triggers.map(t => t.tag).join("・")}`).join(" / "), "", "", "", "", "", "", dayFlags(dayDoc(r.d, dayOf(ev.t))).join("・")]);
       } else {
@@ -1266,7 +1364,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     for (const ev of r.events) {
       const dl = dayLabel(new Date(ev.t));
       if (dl !== lastDay) { const fl = dayFlags(dayDoc(r.d, dayOf(ev.t))); const nt = dayDoc(r.d, dayOf(ev.t))?.note; cur = el("div", { class: "day" }, el("span", { class: "day-head" }, [dl, ...fl.map(f => el("span", { class: "chip day-chip", text: f })), nt ? el("span", { class: "small muted", text: " " + nt }) : null])); out.push(cur); lastDay = dl; }
-      if (ev.type === "meal") cur.append(el("div", { class: "ev" }, [el("span", { class: "num", text: hm(ev.t) }), el("span", { text: ev.x.food })]));
+      if (ev.type === "meal") cur.append(el("div", { class: "ev" }, [el("span", { class: "num", text: hm(ev.t) }), el("span", { text: (ev.x.type === "med" ? "💊 " : "") + ev.x.food + (ev.x.dose ? `（${ev.x.dose}）` : "") })]));
       else {
         const sym = ev.x; const list = r.results[sym.id].slice(0, 3);
         cur.append(el("div", { class: "ev sym" }, [el("span", { class: "num", text: hm(ev.t) }),
@@ -1336,7 +1434,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     for (const c of MEDS) {
       box.append(el("div", { class: "group" }, [
         el("div", { class: "cat-head" }, [el("span", { class: "cat-pic", text: c.pic, "aria-hidden": "true" }), el("h3", { text: c.cat })]),
-        el("div", { class: "supp-grid" }, c.items.map(x => el("button", { type: "button", class: "supp other", title: "タップで記録欄に入れる", onclick: () => addFood(x.f) }, [
+        el("div", { class: "supp-grid" }, c.items.map(x => el("button", { type: "button", class: "supp other", title: "タップで記録欄に入れる", onclick: () => addMed(x.f) }, [
           el("span", { class: "pic", text: "💊", "aria-hidden": "true" }),
           el("span", { class: "supp-body" }, [
             el("b", { text: x.f }),
@@ -1356,7 +1454,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
         el("div", { class: "cat-head" }, [el("span", { class: "cat-pic", text: c.pic, "aria-hidden": "true" }), el("h3", { text: c.cat })]),
         el("div", { class: "supp-grid" }, c.items.map(s => {
           const fo = fodmapOf(s.f); const rk = fo.risk || "other";
-          return el("button", { type: "button", class: "supp " + rk, title: "タップで記録欄に入れる", onclick: () => addFood(s.f) }, [
+          return el("button", { type: "button", class: "supp " + rk, title: "タップで記録欄に入れる", onclick: () => addMed(s.f) }, [
             el("span", { class: "pic", text: s.pic, "aria-hidden": "true" }),
             el("span", { class: "supp-body" }, [
               el("span", { class: "row" }, [el("span", { class: "risk-tag " + rk, text: { high: "高", mid: "中", low: "低", other: "注意" }[rk] }), el("b", { text: s.f })]),
@@ -1374,7 +1472,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   function setRec(k) {
     recSub = k;
     for (const b of document.querySelectorAll("#rec-seg button")) b.setAttribute("aria-selected", String(b.dataset.rec === k));
-    $("meal-form").hidden = k !== "meal"; $("sym-form").hidden = k !== "sym"; $("day-form").hidden = k !== "day";
+    $("meal-form").hidden = k !== "meal"; $("med-form").hidden = k !== "med"; $("sym-form").hidden = k !== "sym"; $("day-form").hidden = k !== "day";
   }
   function show(v) {
     if (["ref", "supp", "meds"].includes(v)) { lookSub = v; v = "lookup"; }
@@ -1391,7 +1489,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   for (const b of document.querySelectorAll("#look-seg button")) b.addEventListener("click", () => show(b.dataset.look));
   setRec("meal"); show("log");
 
-  renderRef(); renderSupps(); renderMeds(); renderSymForm(); renderDayForm(); renderAll(); init();
+  renderRef(); renderSupps(); renderMeds(); renderRegular(); renderSymForm(); renderDayForm(); renderAll(); init();
 })();
 </script>
 
