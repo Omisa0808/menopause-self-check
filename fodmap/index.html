@@ -162,6 +162,11 @@ td.heat { border-left: 2px solid var(--surface); }
 label.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-weight: 500; }
 label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
 @media (max-width: 420px) { .seg button { font-size: .8rem; gap: 3px; padding: 9px 2px; } }
+.progress-card { display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: var(--accent-soft); color: var(--ink); }
+.progress-card .bar-track { height: 10px; background: var(--surface); border-radius: 999px; overflow: hidden; }
+.progress-card .bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+.progress-list { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: .85rem; }
+.hint { color: var(--title); background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
 form.editing { border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .kamo.late { background: var(--accent-soft); color: var(--title); border: 1px dashed var(--accent); }
 .kamo.late.l3 { background: var(--accent); color: var(--surface); border-style: solid; }
@@ -395,6 +400,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   <section id="view-rel" class="panel ref" hidden>
     <h2>食品と症状の関係（食べてから48時間まで）</h2>
     <p class="small muted">食品ごとに、食べたあと各時間帯に症状が出た割合です。いちばん上の「ふだん」は、すべての食事での割合です。ふだんより赤く濃いマスほど、その時間帯に症状とつながっていそうです。2回以上食べた食品だけを出しています。</p>
+    <div class="progress-card" id="rel-progress"></div>
     <div class="filters" id="rel-kind"></div>
     <div class="table-wrap" id="rel-table"></div>
     <p class="small muted">「関係」の●は、0〜48時間のどこかで症状が出た割合が、ふだんよりどれだけ高いかと回数から付けています。記録から見た傾向で、診断ではありません。</p>
@@ -1109,9 +1115,15 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const late = Object.values(stats.per).filter(a => a.level).sort((a, b) => b.level - a.level || b.rate - a.rate).slice(0, 6);
     const lateBlock = () => late.length ? el("div", { class: "late-box" }, [el("p", { class: "small late-head", text: "遅れて出るかも（10〜48時間後）" }),
       ...late.map(a => el("div", { class: "risk-row" }, [lateMark(a.level), el("b", { text: a.key }), el("span", { class: "small muted num", text: `${a.hit}/${a.n}回` })]))]) : null;
-    if (!rows.length) { box.append(el("p", { class: "small muted", text: "症状を記録すると、怪しい順にここへ並びます。" })); const lb = lateBlock(); if (lb) box.append(lb); return null; }
+    const lateNear = Object.values(stats.per).filter(a => !a.level && a.hit === 1);
+    const lateHint = () => !late.length && lateNear.length ? el("p", { class: "small hint", text: `「遅れて出るかも」は、同じ食品を2回以上食べて、2回とも10〜48時間後に症状が出ると付きます。あと1回で判定できる食品：${names(lateNear)}` }) : null;
+    if (!rows.length) {
+      const { m: mm, s: ss } = data();
+      box.append(el("p", { class: "small muted", text: !mm.length ? "食事と症状を記録すると、怪しい順にここへ並びます。" : !ss.length ? "症状を1回記録すると、直前10時間に食べたものに「これかも」が付いて、ここに並びます。" : "今のところ「これかも」の食品はありません。記録を続けると、ここに並びます。" }));
+      const lb = lateBlock(); if (lb) box.append(lb); const lh = lateHint(); if (lh) box.append(lh); return null;
+    }
     for (const r of rows) box.append(el("div", { class: "risk-row" }, [kamo(r.max), el("b", { text: r.name }), el("span", { class: "small muted num", text: `${r.n}回` })]));
-    const lb = lateBlock(); if (lb) box.append(lb);
+    const lb = lateBlock(); if (lb) box.append(lb); const lh = lateHint(); if (lh) box.append(lh);
     return rows[0];
   }
 
@@ -1154,13 +1166,13 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   function relStats(meals, symptoms, kind) {
     const H = 3600000, now = Date.now();
     const symT = symptoms.filter(x => kind === "all" || x.kinds.includes(kind)).map(x => new Date(x.at).getTime());
-    const blank = k => ({ key: k, n: 0, any: 0, b: BUCKETS.map(() => 0) });
+    const blank = k => ({ key: k, n: 0, any: 0, b: BUCKETS.map(() => 0) }); let pending = 0;
     const base = blank("ふだん（すべての食事）"), per = {};
     for (const m of meals) {
       const t = new Date(m.eatenAt).getTime();
       const hits = BUCKETS.map(([lo, hi]) => symT.some(st => st - t >= lo * H && st - t < hi * H));
       const any = hits.some(Boolean);
-      if (!any && now - t < 48 * H) continue; // too recent to know
+      if (!any && now - t < 48 * H) { pending++; continue; } // too recent to know
       const keys = new Set(splitItems(m.food).flatMap(it => [...lateKeys(it), ...fodmapOf(it).foods]));
       for (const a of [base, ...[...keys].map(k => per[k] || (per[k] = blank(k)))]) {
         a.n++; if (any) a.any++; hits.forEach((h, i) => { if (h) a.b[i]++; });
@@ -1172,7 +1184,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
       a.level = a.any >= 4 && rate >= 0.6 && lift >= 0.35 ? 3 : a.any >= 3 && lift >= 0.25 ? 2 : a.any >= 2 && lift >= 0.15 ? 1 : 0;
       a.lift = lift; return a;
     }).sort((a, b) => b.level - a.level || b.lift - a.lift || b.n - a.n);
-    return { base, rows };
+    return { base, rows, all: Object.values(per), pending };
   }
   function dayCondStats(d, symptoms, kind) {
     const symDays = new Set(symptoms.filter(x => kind === "all" || x.kinds.includes(kind)).map(x => dayOf(x.at)));
@@ -1184,7 +1196,29 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     return { base, rows: FLAGS.map(f => per[f]).filter(Boolean) };
   }
   const relMark = lv => el("span", { class: "kamo rel l" + lv }, [el("span", { class: "dots", text: "●".repeat(lv) + "○".repeat(3 - lv) }), "関係？"]);
+  const names = arr => arr.slice(0, 5).map(a => a.key).join("、") + (arr.length > 5 ? ` ほか${arr.length - 5}品` : "");
+  function renderProgress() {
+    const { m, s } = data(); const box = $("rel-progress"); box.replaceChildren();
+    const recDays = new Set([...m.map(x => dayOf(x.eatenAt)), ...s.map(x => dayOf(x.at))]).size;
+    const goal = recDays < 7 ? 7 : 28; const pctDone = Math.min(100, Math.round(recDays / goal * 100));
+    const r = relStats(m, s, "all");
+    const lines = [];
+    lines.push(recDays >= 28 ? "十分な記録がたまりました。表の傾向はかなり確かになっています。"
+      : recDays >= 7 ? `傾向が見え始めています。あと${28 - recDays}日記録すると、より確かな傾向になります。`
+      : `あと${7 - recDays}日記録すると、傾向が見え始めます。`);
+    if (!s.length) lines.push("症状をまだ記録していません。症状を1回記録すると、直前10時間の食事に「これかも」が付きます。");
+    const inTable = r.all.filter(a => a.n >= 2), one = r.all.filter(a => a.n === 1);
+    lines.push(inTable.length ? `表に出ている食品：${inTable.length}品（2回以上食べたもの）` : "同じ食品を2回以上食べると、表に並び始めます。");
+    if (one.length) lines.push(`あと1回食べると表に出る：${names(one)}`);
+    const near = r.all.filter(a => a.any === 1);
+    if (near.length) lines.push(`あと1回、食べた後に症状が出ると「関係？」の印が付くかもしれない：${names(near)}`);
+    if (r.pending) lines.push(`食べてから48時間たっていない食事が${r.pending}件あります。48時間たつと（またはその間に症状が出ると）表に入ります。`);
+    box.append(el("div", { class: "row", style: "justify-content:space-between" }, [el("b", { text: "記録の進み具合" }), el("span", { class: "small num", text: `記録した日 ${recDays}日 / 目安${goal}日` })]),
+      el("div", { class: "bar-track" }, el("div", { class: "bar-fill", style: `width:${pctDone}%` })),
+      el("ul", { class: "progress-list" }, lines.map(t => el("li", { text: t }))));
+  }
   function renderRel() {
+    renderProgress();
     const { m, s, ex } = data();
     $("rel-kind").replaceChildren(...[["all", "すべての症状"], ...KINDS.map(k => [k.k, k.label])].map(([k, l]) =>
       el("button", { type: "button", "aria-pressed": String(relKind === k), onclick: () => { relKind = k; renderRel(); } }, l)));
