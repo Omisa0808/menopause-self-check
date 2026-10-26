@@ -463,6 +463,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
             <tr><td>脂質</td><td>ルーや揚げ物など脂質が多いものは少し上がる。FODMAPではないが、腸を刺激しやすいため。</td></tr>
             <tr><td>カフェイン・お酒・辛いもの</td><td>コーヒー・紅茶・緑茶、お酒、辛いものは上がる。症状に下痢があるときは大きく上がる。</td></tr>
             <tr><td>遅れて出るかも</td><td>「これかも」とは別の印です。これまでの記録全体で、その食品を食べた<b>10〜48時間後</b>に症状が出た割合が、ほかの食事より目立って高いと付きます。卵・乳・小麦・大豆・そば・えび/かに・ナッツ・ごまは料理名からまとめて数えます（例：卵焼き・オムレツ→卵）。2回以上重なってから付き、回数と割合が増えるほど●が増えます。<br><span class="muted">記録から見た傾向で、アレルギーの検査や診断ではありません。じんましん・息苦しさなどがあればすぐ受診し、アレルギーが気になるときは医師に相談してください。</span></td></tr>
+            <tr><td>料理名</td><td>ハンバーグ→玉ねぎ・小麦・卵、餃子→にんにく・ニラ・小麦、コンソメ→玉ねぎ・にんにく のように、よく入っている食材も含めて判定します。お店や作り方で違うので、わかるときは食材も書いてください。</td></tr>
             <tr><td>サプリ・薬</td><td>「調べる」の「サプリ」「薬の詳細」にあるものは、それぞれ起こしやすい症状のときに上がる（例：酸化マグネシウムは下痢、鉄剤は便秘）。</td></tr>
             <tr><td>症状の種類</td><td>下痢：果糖・乳糖・ポリオール／ガス・便秘：フルクタン・GOS が合う。</td></tr>
             <tr><td>あなたの過去の記録</td><td>ほかの症状の前10時間にも食べていた食品ほど上がる。記録が増えるほど、あなた向けの判定になります。</td></tr>
@@ -514,14 +515,41 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     { name: "飲み物", foods: ["コーヒー", "カフェラテ", "カフェオレ", "エスプレッソ", "紅茶", "ミルクティー", "緑茶", "抹茶", "ウーロン茶", "ほうじ茶", "エナジードリンク"] },
     { name: "お酒", foods: ["ビール", "ワイン", "日本酒", "焼酎", "チューハイ", "ハイボール"] },
     { name: "辛いもの", foods: ["唐辛子", "キムチ", "麻婆豆腐", "担々麺", "激辛料理"] },
+    { name: "料理（隠れ食材に注意）", foods: ["ハンバーグ", "餃子", "コンソメスープ", "パスタソース", "ペペロンチーノ", "牛丼", "肉じゃが", "唐揚げ", "天ぷら", "お好み焼き", "焼肉のたれ", "ポタージュ", "のど飴"] },
     { name: "ルー・ソース", foods: ["カレールー", "シチュールー", "ハヤシルー", "ホワイトソース", "グラタン"] },
     { name: "甘味料・その他", foods: ["はちみつ", "果糖ぶどう糖液糖", "ソルビトール", "キシリトール", "マルチトール", "シュガーレスガム"] },
   ];
-  const CAT_PIC = { "穀物・パン・麺": "🍞", "野菜・きのこ": "🥦", "果物": "🍎", "豆・大豆製品": "🫘", "乳製品": "🥛", "ナッツ": "🥜", "ルー・ソース": "🍛", "お菓子・スイーツ": "🍰", "飲み物": "☕", "お酒": "🍺", "辛いもの": "🌶️", "甘味料・その他": "🍯" };
+  const CAT_PIC = { "穀物・パン・麺": "🍞", "野菜・きのこ": "🥦", "果物": "🍎", "豆・大豆製品": "🫘", "乳製品": "🥛", "ナッツ": "🥜", "料理（隠れ食材に注意）": "🍳", "ルー・ソース": "🍛", "お菓子・スイーツ": "🍰", "飲み物": "☕", "お酒": "🍺", "辛いもの": "🌶️", "甘味料・その他": "🍯" };
   // Low-FODMAP fibers: recorded and shown, never scored
   const LOW = [{ f: "サイリウム", words: ["サイリウム", "オオバコ"] }, { f: "グアーガム", words: ["グアーガム"] }];
   // Dishes typed without "ルー" still count as made with the roux
   const ALIAS = [["カレー", "カレールー"], ["シチュー", "シチュールー"], ["ハヤシ", "ハヤシルー"]];
+  // Dishes that usually hide FODMAP ingredients (or allergens) inside
+  const DISHES = [
+    { words: ["ハンバーグ"], adds: ["玉ねぎ", "小麦", "卵"] },
+    { words: ["餃子", "ギョウザ", "ぎょうざ"], adds: ["にんにく", "ニラ", "小麦"] },
+    { words: ["コンソメ", "ブイヨン", "スープの素", "顆粒だし", "鶏ガラスープ"], adds: ["玉ねぎ", "にんにく"] },
+    { words: ["パスタソース", "ミートソース", "ボロネーゼ", "トマトソース"], adds: ["玉ねぎ", "にんにく"] },
+    { words: ["ペペロンチーノ", "ガーリック"], adds: ["にんにく"] },
+    { words: ["オニオン"], adds: ["玉ねぎ"] },
+    { words: ["牛丼", "親子丼", "カツ丼", "他人丼", "肉じゃが", "生姜焼き", "すき焼き"], adds: ["玉ねぎ"] },
+    { words: ["親子丼", "カツ丼", "他人丼", "すき焼き"], adds: ["卵"] },
+    { words: ["焼肉のたれ", "焼き肉のたれ"], adds: ["にんにく", "玉ねぎ", "りんご"] },
+    { words: ["唐揚げ", "から揚げ", "からあげ"], adds: ["にんにく", "小麦"] },
+    { words: ["天ぷら", "エビフライ", "アジフライ", "カキフライ", "ミックスフライ", "とんかつ", "チキンカツ", "コロッケ", "お好み焼き", "たこ焼き", "もんじゃ"], adds: ["小麦"] },
+    { words: ["麻婆", "キムチ", "チゲ"], adds: ["にんにく"] },
+    { words: ["ポタージュ", "コーンスープ", "クリームスープ"], adds: ["玉ねぎ", "牛乳"] },
+    { words: ["ラテ", "カプチーノ"], adds: ["牛乳"], not: ["ソイラテ", "オーツ", "アーモンドミルク"] },
+    { words: ["ソイラテ"], adds: ["豆乳"] },
+    { words: ["のど飴", "ノンシュガー", "シュガーレス", "糖類ゼロ", "糖質ゼロ", "低糖質"], adds: ["マルチトール"] },
+  ];
+  function expand(raw) {
+    let item = raw; const hidden = [];
+    for (const [a, t] of ALIAS) if (raw.includes(a) && !raw.includes(t)) item += " " + t;
+    for (const d of DISHES) if (d.words.some(w => raw.includes(w)) && !(d.not || []).some(w => raw.includes(w)))
+      for (const x of d.adds) if (!item.includes(x)) { item += " " + x; hidden.push(x); }
+    return { item, hidden };
+  }
   // Not a FODMAP, but fatty food can upset the gut too (scored lightly)
   const FAT_WORDS = ["カレールー", "シチュールー", "ハヤシルー", "ホワイトソース", "グラタン", "揚げ", "フライ", "天ぷら", "とんかつ", "チキンカツ", "カツ丼", "カツカレー", "ベーコン", "バター", "マヨネーズ", "生クリーム", "シュークリーム", "エクレア", "ケーキ", "アイスクリーム", "ピザ"];
   const PIC = {
@@ -531,6 +559,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     "大豆": "🫘", "豆乳": "🥛", "絹ごし豆腐": "🧈", "ひよこ豆": "🫘", "レンズ豆": "🫘", "いんげん豆": "🫛", "小豆": "🫘", "あんこ": "🍡", "グリーンピース": "🫛", "フムス": "🥙", "枝豆": "🫛",
     "牛乳": "🥛", "ヨーグルト": "🥣", "アイスクリーム": "🍨", "生クリーム": "🍰", "練乳": "🥫", "カフェラテ": "☕", "カッテージチーズ": "🧀", "リコッタ": "🧀", "クリームチーズ": "🧀",
     "カシューナッツ": "🥜", "ピスタチオ": "🥜", "アーモンド": "🌰", "ヘーゼルナッツ": "🌰",
+    "ハンバーグ": "🍖", "餃子": "🥟", "コンソメスープ": "🥣", "パスタソース": "🍝", "ペペロンチーノ": "🍝", "牛丼": "🍚", "肉じゃが": "🥘", "唐揚げ": "🍗", "天ぷら": "🍤", "お好み焼き": "🥞", "焼肉のたれ": "🥩", "ポタージュ": "🥣", "のど飴": "🍬",
     "カレールー": "🍛", "シチュールー": "🍲", "ハヤシルー": "🍛", "ホワイトソース": "🫕", "グラタン": "🥘", "シュークリーム": "🧁", "エクレア": "🍫", "ケーキ": "🍰",
     "紅茶": "🫖", "緑茶": "🍵", "抹茶": "🍵", "ウーロン茶": "🍵", "ほうじ茶": "🍵", "ミルクティー": "🧋",
     "ビール": "🍺", "ワイン": "🍷", "日本酒": "🍶", "焼酎": "🥃", "チューハイ": "🍹", "ハイボール": "🥃",
@@ -633,8 +662,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
   // ---- food helpers ----
   const splitItems = text => text.split(/[、,，・\/\n]+|\s{2,}/).map(s => s.trim()).filter(Boolean);
   function fodmapOf(raw) {
-    let item = raw;
-    for (const [a, t] of ALIAS) if (raw.includes(a) && !raw.includes(t)) item += " " + t;
+    const ex = expand(raw); const item = ex.item;
     const groups = new Set(), foods = [];
     let risk = null;
     for (const g of GROUPS) for (const f of g.foods) if (item.includes(f)) { groups.add(g.id); risk = "high"; if (!foods.includes(f)) foods.push(f); }
@@ -643,7 +671,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     const triggers = TRIGGERS.filter(t => t.words.some(w => item.includes(w)));
     if (triggers.length && !foods.length) foods.push(triggers[0].words.find(w => item.includes(w)));
     const loose = groups.has("fructose") || groups.has("lactose") || groups.has("polyol") || triggers.some(t => t.boost.diarrhea);
-    return { groups: [...groups], foods, risk, triggers, loose };
+    return { groups: [...groups], foods, risk, triggers, loose, hidden: ex.hidden };
   }
   // the key that ties the same food across meals: the matched high-FODMAP food names if any, else the item text
   const itemKey = item => { const f = fodmapOf(item).foods; return f.length ? f.slice().sort().join("+") : item; };
@@ -697,11 +725,12 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     { k: "ごま", words: ["ごま", "胡麻"] },
   ];
   // what a food is counted as for the delayed pattern: allergen groups first, then FODMAP foods, else the item itself
-  function lateKeys(item) {
+  function lateKeys(raw) {
+    const item = expand(raw).item;
     const keys = ALLERGENS.filter(a => a.words.some(w => item.includes(w)) && !(a.not || []).some(w => item.includes(w))).map(a => a.k + "を含むもの");
-    const f = fodmapOf(item).foods.filter(x => !keys.length || !ALLERGENS.some(a => a.words.includes(x)));
+    const f = fodmapOf(raw).foods.filter(x => !keys.length || !ALLERGENS.some(a => a.words.includes(x)));
     const all = [...new Set([...keys, ...f])];
-    return all.length ? all : [item];
+    return all.length ? all : [raw];
   }
   function lateStats(meals, symptoms) {
     const now = Date.now(), H = 3600000;
@@ -870,7 +899,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
     for (const it of items) {
       const f = fodmapOf(it);
       const head = f.risk === "high" || f.risk === "mid" ? `${it}：${f.risk === "high" ? "高" : "中"}リスク（${f.groups.map(groupName).join("・")}）` : f.risk === "low" ? `${it}：低FODMAP` : it;
-      box.append(el("span", { class: f.risk === "high" ? "chip hi" : (f.risk === "mid" || f.triggers.length) ? "chip mid" : f.risk === "low" ? "chip" : "chip plain", text: head + f.triggers.map(t => "・" + t.tag).join("") }));
+      box.append(el("span", { class: f.risk === "high" ? "chip hi" : (f.risk === "mid" || f.triggers.length) ? "chip mid" : f.risk === "low" ? "chip" : "chip plain", text: head + f.triggers.map(t => "・" + t.tag).join("") + (f.hidden.length ? `（${f.hidden.join("・")}入りのことが多い）` : "") }));
     }
   }
   $("food").addEventListener("input", renderDetect);
@@ -1152,6 +1181,7 @@ th { color: var(--muted); font-weight: 500; font-size: .8rem; letter-spacing: .0
             el("span", { class: "pic", text: PIC[f] || CAT_PIC[c.name] || "", "aria-hidden": "true" }),
             el("span", { class: "fname", text: f }),
             el("span", { class: "ftype", text: fo.groups.length ? fo.groups.map(groupName).join("・") + (note ? `（${note}）` : "") : "FODMAPではない" }),
+            fo.hidden.length ? el("span", { class: "ftype", text: fo.hidden.join("・") + "入りが多い" }) : null,
             ...fo.triggers.map(t => el("span", { class: "fat-tag", text: t.tag })),
             fo.loose ? el("span", { class: "loose-tag", text: "下痢しやすい" }) : null,
           ]);
