@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ガス腹原因特定アプリ | おなかカンガルー</title>
+  <title>おなかのガス探偵｜5分で見つかる、あなたのガス腹の犯人 | おなかカンガルー</title>
   <meta name="description" content="🦘ガス腹を卒業した健康オタク薬剤師・おなかカンガルー監修。あなたのガス腹の原因タイプ（5つ）と、張りやすいかもしれない食材がわかるセルフチェック。" />
 
   <!-- OGP (LINEのリンクプレビュー用) -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="🦘 ガス腹原因特定アプリ | おなかカンガルー" />
+  <meta property="og:title" content="🦘 おなかのガス探偵｜5分で見つかる、あなたのガス腹の犯人" />
   <meta property="og:description" content="あなたのガス腹はどのタイプ？ 5つのタイプと、張りやすいかもしれない食材がわかる。無料・5分・登録不要。" />
   <meta property="og:image" content="../assets/kangaroo.png" />
   <meta property="og:locale" content="ja_JP" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="🦘 ガス腹原因特定アプリ" />
-  <meta name="twitter:description" content="あなたのガス腹タイプがわかる。無料・5分。" />
+  <meta name="twitter:title" content="🦘 おなかのガス探偵" />
+  <meta name="twitter:description" content="5分で見つかる、あなたのガス腹の犯人。無料。" />
   <meta name="twitter:image" content="../assets/kangaroo.png" />
   <meta name="theme-color" content="#5ed4b8" />
 
@@ -166,7 +166,7 @@
     /* ------------------------------------------------------------------ */
     const ROOM_URL = 'https://www.notion.so/34a96187228b8054a0fdd9d3fe359a49?source=copy_link&utm_source=gas_app&utm_content=GAS';
     const STORAGE_KEY = 'onaka_gas_check_v1';
-    const SHARE_TEXT = '🦘おなかカンガルー監修「ガス腹原因特定アプリ」やってみたよ！あなたのガス腹はどのタイプ？';
+    const SHARE_TEXT = '🦘おなかカンガルー監修「おなかのガス探偵」やってみたよ！あなたのガス腹はどのタイプ？';
 
     /* ------------------------------------------------------------------ */
     /*  DATA                                                                */
@@ -617,7 +617,7 @@
               >💬 LINEで送る</a>
               <button
                 onClick={() => {
-                  if (navigator.share) navigator.share({ title:'ガス腹原因特定アプリ', text: SHARE_TEXT, url: shareUrl }).catch(()=>{});
+                  if (navigator.share) navigator.share({ title:'おなかのガス探偵', text: SHARE_TEXT, url: shareUrl }).catch(()=>{});
                   else if (navigator.clipboard) navigator.clipboard.writeText(shareUrl);
                 }}
                 style={{ flex:1, padding:'13px 8px', border:'none', background:'var(--purple)', color:'white', fontFamily:'inherit', fontSize:13, fontWeight:900, borderRadius:99, cursor:'pointer', boxShadow:'0 3px 0 #6d28d9' }}
@@ -687,7 +687,7 @@
           }}>
             🎁 ととのえ実験室 参加プレゼント
           </div>
-          <Hero title={<>ガス腹<br />原因特定アプリ</>} sub="ガス腹を卒業した薬剤師がつくった、5分のセルフチェック。最近1か月のお腹で答えてね" />
+          <Hero title={<>おなかの<br />ガス探偵🔍</>} sub="5分で見つかる、あなたのガス腹の犯人。ガス腹を卒業した薬剤師がつくったセルフチェック。最近1か月のお腹で答えてね" />
           <RedFlagBox />
           <ProgressBar done={doneA} total={allItemsA.length} label="パート1の進み具合" />
           {TYPES.map((t, i) => (
